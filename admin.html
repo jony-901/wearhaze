@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — HAZE</title>
+  <link rel="stylesheet" href="admin.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='85' font-size='80'>⚙️</text></svg>">
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ────────────────────────────────────── -->
+<div id="login-screen" class="login-screen">
+  <div class="login-box">
+    <div class="login-logo">HAZE</div>
+    <div class="login-sub">Admin Panel</div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="Enter admin password" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="login-btn">Login</button>
+    <div class="login-error" id="login-error">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- ── ADMIN APP ───────────────────────────────────────── -->
+<div id="admin-app" style="display:none">
+  <div class="admin-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="admin-sidebar">
+      <div class="sidebar-logo">HAZE<span>Admin Panel</span></div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Main</div>
+        <div class="sidebar-link active" data-page="dashboard">
+          <span class="link-icon">📊</span> Dashboard
+        </div>
+        <div class="sidebar-section-label">Store</div>
+        <div class="sidebar-link" data-page="orders">
+          <span class="link-icon">📦</span> Orders
+          <span id="sidebar-pending-count" style="margin-left:auto;background:var(--accent);color:white;border-radius:10px;padding:0.1rem 0.5rem;font-size:0.65rem;display:none"></span>
+        </div>
+        <div class="sidebar-link" data-page="products">
+          <span class="link-icon">👕</span> Products
+        </div>
+        <div class="sidebar-section-label">More</div>
+        <div class="sidebar-link" data-page="settings">
+          <span class="link-icon">⚙️</span> Settings
+        </div>
+        <div class="sidebar-link" onclick="window.open('index.html','_blank')">
+          <span class="link-icon">🌐</span> View Store
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-store-info" id="sidebar-store-info"></div>
+        <button class="sidebar-logout" id="logout-btn">Logout</button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="admin-main">
+      <div class="admin-header">
+        <div class="admin-header-title" id="page-title">Dashboard</div>
+        <div class="admin-header-actions">
+          <span style="font-size:0.8rem;color:var(--ash)" id="header-time"></span>
+        </div>
+      </div>
+      <div class="admin-content" id="admin-content"></div>
+    </main>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="admin-toast" id="admin-toast"></div>
+
+<script src="data.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

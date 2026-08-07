@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Track Order — HAZE</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='85' font-size='80'>🌫</text></svg>">
+  <style>
+    body { background: var(--void); padding-top: 80px; min-height: 100vh; }
+    .track-wrapper { padding: 4rem 0 6rem; }
+    .track-header { text-align: center; margin-bottom: 3rem; }
+    .track-header h1 { font-family: var(--font-display); font-size: 3.5rem; font-weight: 800; text-transform: uppercase; }
+    .track-header p { color: var(--ash); margin-top: 0.5rem; }
+
+    .track-search {
+      max-width: 560px; margin: 0 auto 3rem;
+      background: var(--haze-purple);
+      border: 1px solid rgba(107,79,160,0.2);
+      padding: 2rem;
+    }
+    .track-search label { font-family: var(--font-label); font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--smoke); display: block; margin-bottom: 0.5rem; }
+    .track-input-row { display: flex; gap: 0; }
+    .track-input-row input {
+      flex: 1; padding: 0.9rem 1.2rem;
+      background: rgba(0,0,0,0.3); border: 1px solid rgba(107,79,160,0.2);
+      border-right: none; color: var(--ghost);
+      font-family: var(--font-body); font-size: 0.95rem; outline: none;
+      transition: border-color 0.3s;
+    }
+    .track-input-row input:focus { border-color: var(--accent); }
+    .track-input-row input::placeholder { color: rgba(196,184,216,0.3); }
+    .track-btn {
+      padding: 0.9rem 1.8rem; background: var(--accent); color: white;
+      font-family: var(--font-label); font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.15em; text-transform: uppercase; border: none; cursor: pointer;
+      transition: background 0.3s;
+    }
+    .track-btn:hover { background: #7c3aed; }
+    .track-hint { font-size: 0.8rem; color: var(--smoke); margin-top: 0.8rem; }
+
+    .orders-list { max-width: 760px; margin: 0 auto; }
+    .order-card {
+      background: var(--haze-purple);
+      border: 1px solid rgba(107,79,160,0.15);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .order-card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 1.5rem;
+      border-bottom: 1px solid rgba(107,79,160,0.1);
+      flex-wrap: wrap; gap: 0.8rem;
+    }
+    .order-id { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; letter-spacing: 0.05em; }
+    .order-date { font-size: 0.8rem; color: var(--ash); }
+    .order-total { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+    .status-badge {
+      padding: 0.3rem 0.9rem; font-size: 0.65rem; font-weight: 600;
+      letter-spacing: 0.15em; text-transform: uppercase; font-family: var(--font-label);
+    }
+    .status-pending { background: rgba(234,179,8,0.15); color: #eab308; border: 1px solid rgba(234,179,8,0.3); }
+    .status-processing { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .status-shipped { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+    .status-delivered { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+    .status-cancelled { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+
+    .order-items-row {
+      display: flex; gap: 0.8rem; padding: 1.2rem 1.5rem; flex-wrap: wrap;
+    }
+    .order-item-thumb {
+      width: 56px; height: 56px; object-fit: cover;
+      border: 1px solid rgba(107,79,160,0.2);
+    }
+    .order-item-info { display: flex; flex-direction: column; justify-content: center; }
+    .order-item-name { font-weight: 600; font-size: 0.85rem; }
+    .order-item-meta { font-size: 0.75rem; color: var(--ash); }
+
+    /* Status timeline */
+    .status-timeline { padding: 1.2rem 1.5rem; border-top: 1px solid rgba(107,79,160,0.1); }
+    .timeline-title { font-family: var(--font-label); font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--smoke); margin-bottom: 1rem; }
+    .timeline-steps { display: flex; gap: 0; }
+    .timeline-step { flex: 1; position: relative; text-align: center; }
+    .timeline-step:not(:last-child)::after {
+      content: ''; position: absolute; top: 11px; left: 50%;
+      width: 100%; height: 2px; background: rgba(107,79,160,0.2); z-index: 0;
+    }
+    .timeline-step.done:not(:last-child)::after { background: var(--accent); }
+    .timeline-dot {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid rgba(107,79,160,0.3);
+      background: var(--void); margin: 0 auto 0.5rem;
+      position: relative; z-index: 1;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.6rem; transition: all 0.3s;
+    }
+    .timeline-step.done .timeline-dot { background: var(--accent); border-color: var(--accent); color: white; }
+    .timeline-step.active .timeline-dot { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+    .timeline-label { font-size: 0.65rem; color: var(--ash); }
+    .timeline-step.done .timeline-label, .timeline-step.active .timeline-label { color: var(--ghost); }
+
+    .no-orders { text-align: center; padding: 4rem 2rem; color: var(--ash); }
+    .no-orders h3 { font-family: var(--font-display); font-size: 1.5rem; text-transform: uppercase; margin-bottom: 0.5rem; color: var(--ghost); }
+  </style>
+</head>
+<body>
+  <nav class="navbar scrolled">
+    <div class="container">
+      <a href="index.html" class="nav-logo">HAZE</a>
+      <div class="nav-links">
+        <a href="index.html">← Back to Shop</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="track-wrapper">
+    <div class="container">
+      <div class="track-header">
+        <span class="section-label">Track Your Order</span>
+        <h1>Order Status</h1>
+        <p>Enter your phone number or Order ID to track your order.</p>
+      </div>
+
+      <div class="track-search">
+        <label>Phone Number or Order ID</label>
+        <div class="track-input-row">
+          <input type="text" id="track-input" placeholder="01XXXXXXXXX or HZ-XXXXXX">
+          <button class="track-btn" id="track-btn">Track</button>
+        </div>
+        <div class="track-hint">Example order ID: HZ-ABC123</div>
+      </div>
+
+      <div class="orders-list" id="orders-list" style="display:none"></div>
+      <div id="no-orders" class="no-orders" style="display:none">
+        <h3>No Orders Found</h3>
+        <p>We couldn't find any orders matching your search.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script>
+    const STATUS_STEPS = ['pending','processing','shipped','delivered'];
+    const STATUS_LABELS = { pending:'Ordered', processing:'Processing', shipped:'Shipped', delivered:'Delivered', cancelled:'Cancelled' };
+
+    function statusBadge(status) {
+      return `<span class="status-badge status-${status}">${STATUS_LABELS[status] || status}</span>`;
+    }
+
+    function renderTimeline(order) {
+      if (order.status === 'cancelled') {
+        return `<div class="status-timeline"><div class="timeline-title">Status</div><span class="status-badge status-cancelled">Cancelled</span></div>`;
+      }
+      const currentIdx = STATUS_STEPS.indexOf(order.status);
+      return `
+        <div class="status-timeline">
+          <div class="timeline-title">Delivery Progress</div>
+          <div class="timeline-steps">
+            ${STATUS_STEPS.map((step, i) => {
+              const isDone = i < currentIdx;
+              const isActive = i === currentIdx;
+              return `
+                <div class="timeline-step ${isDone ? 'done' : ''} ${isActive ? 'active' : ''}">
+                  <div class="timeline-dot">${isDone ? '✓' : ''}</div>
+                  <div class="timeline-label">${STATUS_LABELS[step]}</div>
+                </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+    }
+
+    function renderOrders(orders) {
+      const list = document.getElementById('orders-list');
+      const none = document.getElementById('no-orders');
+      if (!orders || orders.length === 0) {
+        list.style.display = 'none'; none.style.display = 'block'; return;
+      }
+      none.style.display = 'none'; list.style.display = 'block';
+      list.innerHTML = orders.map(order => `
+        <div class="order-card">
+          <div class="order-card-header">
+            <div>
+              <div class="order-id">${order.orderId}</div>
+              <div class="order-date">${new Date(order.createdAt).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'})}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+              ${statusBadge(order.status)}
+              <div class="order-total">৳ ${order.total.toLocaleString()}</div>
+            </div>
+          </div>
+          <div class="order-items-row">
+            ${order.items.map(item => `
+              <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.4rem">
+                <img class="order-item-thumb" src="${item.image}" alt="${item.name}">
+                <div class="order-item-info">
+                  <div class="order-item-name">${item.name}</div>
+                  <div class="order-item-meta">Size: ${item.size} × ${item.qty} — ৳ ${(item.price*item.qty).toLocaleString()}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          ${renderTimeline(order)}
+          <div style="padding:0.8rem 1.5rem;border-top:1px solid rgba(107,79,160,0.1);font-size:0.8rem;color:var(--ash)">
+            📍 ${order.customer.address}, ${order.customer.city}, ${order.customer.district}
+            &nbsp;|&nbsp; 📞 ${order.customer.phone}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('track-btn').addEventListener('click', () => {
+      const val = document.getElementById('track-input').value.trim();
+      if (!val) return;
+      let found;
+      if (val.toUpperCase().startsWith('HZ-')) {
+        const o = HazeDB.getOrder(val.toUpperCase());
+        found = o ? [o] : [];
+      } else {
+        found = HazeDB.getOrdersByPhone(val);
+      }
+      renderOrders(found);
+    });
+
+    document.getElementById('track-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('track-btn').click();
+    });
+
+    // If ?order= in URL, auto-search
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('order')) {
+      document.getElementById('track-input').value = params.get('order');
+      document.getElementById('track-btn').click();
+    }
+  </script>
+</body>
+</html>
