@@ -80,6 +80,7 @@ const HazeDB = (() => {
   ];
 
   const ADMIN_DEFAULT_PASSWORD = 'haze2026';
+  const ADMIN_EMAIL = 'wearhaze.com@gmail.com';
   const STORE_DEFAULTS = {
     storeName: 'HAZE',
     tagline: 'Wear the Haze',
@@ -105,21 +106,86 @@ const HazeDB = (() => {
 
   // ── INIT ─────────────────────────────────────────────
   function init() {
-    if (!localStorage.getItem('haze_products')) {
-      setStore('products', DEFAULT_PRODUCTS);
+    if (!localStorage.getItem('haze_products')) setStore('products', DEFAULT_PRODUCTS);
+    if (!localStorage.getItem('haze_orders'))   setStore('orders', []);
+    if (!localStorage.getItem('haze_cart'))     setStore('cart', []);
+    if (!localStorage.getItem('haze_admin_pass')) setStore('admin_pass', ADMIN_DEFAULT_PASSWORD);
+    if (!localStorage.getItem('haze_settings')) setStore('settings', STORE_DEFAULTS);
+    if (!localStorage.getItem('haze_users'))    setStore('users', []);
+  }
+
+  // ── SIMPLE HASH (not cryptographic, just obfuscation) ──
+  function simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
     }
-    if (!localStorage.getItem('haze_orders')) {
-      setStore('orders', []);
+    return hash.toString(16);
+  }
+
+  // ── USER AUTH ─────────────────────────────────────────
+  function getUsers() { return getStore('users', []); }
+
+  function registerUser(name, email, password) {
+    const users = getUsers();
+    if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+      return { ok: false, error: 'Email already registered.' };
     }
-    if (!localStorage.getItem('haze_cart')) {
-      setStore('cart', []);
+    const user = {
+      id: 'u-' + Date.now(),
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      password: simpleHash(password),
+      role: email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'admin' : 'customer',
+      createdAt: Date.now()
+    };
+    users.push(user);
+    setStore('users', users);
+    // Auto login
+    sessionStorage.setItem('haze_user', JSON.stringify({ id: user.id, name: user.name, email: user.email, role: user.role }));
+    return { ok: true, user };
+  }
+
+  function loginUser(email, password) {
+    const users = getUsers();
+    const user = users.find(u => u.email === email.trim().toLowerCase());
+    if (!user) return { ok: false, error: 'No account found with this email.' };
+    if (user.password !== simpleHash(password)) return { ok: false, error: 'Incorrect password.' };
+    const session = { id: user.id, name: user.name, email: user.email, role: user.role };
+    sessionStorage.setItem('haze_user', JSON.stringify(session));
+    // If admin email → also set admin auth
+    if (user.email === ADMIN_EMAIL.toLowerCase()) {
+      sessionStorage.setItem('haze_admin_auth', 'true');
     }
-    if (!localStorage.getItem('haze_admin_pass')) {
-      setStore('admin_pass', ADMIN_DEFAULT_PASSWORD);
-    }
-    if (!localStorage.getItem('haze_settings')) {
-      setStore('settings', STORE_DEFAULTS);
-    }
+    return { ok: true, user: session };
+  }
+
+  function getCurrentUser() {
+    try {
+      const data = sessionStorage.getItem('haze_user');
+      return data ? JSON.parse(data) : null;
+    } catch { return null; }
+  }
+
+  function isUserLoggedIn() { return !!getCurrentUser(); }
+
+  function isCurrentUserAdmin() {
+    const u = getCurrentUser();
+    return u && u.email === ADMIN_EMAIL.toLowerCase();
+  }
+
+  function logoutUser() {
+    sessionStorage.removeItem('haze_user');
+    sessionStorage.removeItem('haze_admin_auth');
+  }
+
+  function getOrdersByEmail(email) {
+    return getOrders().filter(o => o.customer.email && o.customer.email.toLowerCase() === email.toLowerCase());
+  }
+
+  function getUserProfile(email) {
+    return getUsers().find(u => u.email === email.toLowerCase()) || null;
   }
 
   // ── PRODUCTS ─────────────────────────────────────────
@@ -274,6 +340,12 @@ const HazeDB = (() => {
 
   // ── ADMIN AUTH ───────────────────────────────────────
   function adminLogin(password) {
+    // Accept admin email user login OR legacy password
+    const currentUser = getCurrentUser();
+    if (currentUser && currentUser.email === ADMIN_EMAIL.toLowerCase()) {
+      sessionStorage.setItem('haze_admin_auth', 'true');
+      return true;
+    }
     const stored = getStore('admin_pass', ADMIN_DEFAULT_PASSWORD);
     if (password === stored) {
       sessionStorage.setItem('haze_admin_auth', 'true');
@@ -282,10 +354,13 @@ const HazeDB = (() => {
     return false;
   }
   function isAdminLoggedIn() {
+    // Also check if current user is admin email
+    if (isCurrentUserAdmin()) return true;
     return sessionStorage.getItem('haze_admin_auth') === 'true';
   }
   function adminLogout() {
     sessionStorage.removeItem('haze_admin_auth');
+    logoutUser();
   }
   function changeAdminPassword(oldPass, newPass) {
     const stored = getStore('admin_pass', ADMIN_DEFAULT_PASSWORD);
@@ -368,15 +443,18 @@ const HazeDB = (() => {
     // Cart
     getCart, addToCart, removeFromCart, updateCartQty, clearCart, getCartCount, getCartTotal, getCartItems,
     // Orders
-    getOrders, getOrder, getOrdersByPhone, createOrder, updateOrderStatus, deleteOrder,
+    getOrders, getOrder, getOrdersByPhone, getOrdersByEmail, createOrder, updateOrderStatus, deleteOrder,
     // Admin
     adminLogin, isAdminLoggedIn, adminLogout, changeAdminPassword,
+    // User Auth
+    registerUser, loginUser, getCurrentUser, isUserLoggedIn, isCurrentUserAdmin, logoutUser, getUserProfile,
     // Settings
     getSettings, updateSettings,
     // Analytics
     getAnalytics,
     // Utils
-    init
+    init,
+    ADMIN_EMAIL
   };
 
 })();

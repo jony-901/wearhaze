@@ -67,9 +67,31 @@
         <a href="#products">Shop</a>
         <a href="#lookbook">Lookbook</a>
         <a href="account.html">Track Order</a>
-        <a href="admin.html" style="color:var(--smoke)">Admin</a>
+        <span id="nav-admin-link" style="display:none"><a href="admin.html" style="color:var(--accent)">Admin ⚡</a></span>
       </div>
       <div style="display:flex;align-items:center;gap:1rem">
+        <!-- User Auth Button -->
+        <div id="nav-user-area" style="position:relative">
+          <!-- Shown when logged out -->
+          <a href="auth.html" class="nav-auth-btn" id="nav-login-btn"
+            style="font-family:var(--font-label);font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ash);border:1px solid rgba(107,79,160,0.3);padding:0.45rem 1rem;transition:all 0.3s;display:inline-block">
+            Sign In
+          </a>
+          <!-- Shown when logged in -->
+          <div id="nav-user-btn" style="display:none;position:relative">
+            <button onclick="toggleUserMenu()" style="font-family:var(--font-label);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ghost);border:1px solid rgba(107,79,160,0.3);padding:0.45rem 1rem;background:rgba(139,92,246,0.08);display:flex;align-items:center;gap:0.5rem;cursor:pointer">
+              <span>👤</span><span id="nav-user-name">User</span><span style="font-size:0.5rem">▼</span>
+            </button>
+            <div id="user-dropdown" style="display:none;position:absolute;right:0;top:110%;background:var(--haze-purple);border:1px solid rgba(107,79,160,0.2);min-width:160px;z-index:999;padding:0.5rem 0">
+              <div style="padding:0.5rem 1rem;font-size:0.75rem;color:var(--smoke);border-bottom:1px solid rgba(107,79,160,0.1)" id="nav-user-email"></div>
+              <a href="account.html" style="display:block;padding:0.6rem 1rem;font-size:0.8rem;color:var(--ash);transition:background 0.2s" onmouseover="this.style.background='rgba(139,92,246,0.1)'" onmouseout="this.style.background=''">📦 My Orders</a>
+              <div id="nav-admin-menu" style="display:none"><a href="admin.html" style="display:block;padding:0.6rem 1rem;font-size:0.8rem;color:var(--accent);transition:background 0.2s" onmouseover="this.style.background='rgba(139,92,246,0.1)'" onmouseout="this.style.background=''">⚡ Admin Panel</a></div>
+              <div style="border-top:1px solid rgba(107,79,160,0.1);margin-top:0.3rem;padding-top:0.3rem">
+                <button onclick="handleLogout()" style="width:100%;text-align:left;padding:0.6rem 1rem;font-size:0.8rem;color:#f87171;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='rgba(239,68,68,0.05)'" onmouseout="this.style.background=''">🚪 Sign Out</button>
+              </div>
+            </div>
+          </div>
+        </div>
         <!-- Cart Icon -->
         <button class="cart-toggle cart-icon-btn" aria-label="Open cart" id="cart-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
@@ -357,6 +379,36 @@
   <script src="cart.js"></script>
   <script src="script.js"></script>
   <script>
+    // ── USER AUTH NAV ────────────────────────────────────
+    (function initUserNav() {
+      const user = HazeDB.getCurrentUser();
+      if (user) {
+        document.getElementById('nav-login-btn').style.display = 'none';
+        document.getElementById('nav-user-btn').style.display = 'block';
+        document.getElementById('nav-user-name').textContent = user.name.split(' ')[0];
+        document.getElementById('nav-user-email').textContent = user.email;
+        if (HazeDB.isCurrentUserAdmin()) {
+          document.getElementById('nav-admin-menu').style.display = 'block';
+          document.getElementById('nav-admin-link').style.display = 'inline';
+        }
+      }
+    })();
+
+    function toggleUserMenu() {
+      const dd = document.getElementById('user-dropdown');
+      dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+    }
+    document.addEventListener('click', (e) => {
+      if (!document.getElementById('nav-user-area').contains(e.target)) {
+        const dd = document.getElementById('user-dropdown');
+        if (dd) dd.style.display = 'none';
+      }
+    });
+    function handleLogout() {
+      HazeDB.logoutUser();
+      window.location.reload();
+    }
+
     // Size selector logic
     document.querySelectorAll('.size-selector').forEach(selector => {
       selector.querySelectorAll('.size-btn').forEach(btn => {
@@ -376,7 +428,6 @@
         t.textContent = '⚠ Please select a size first';
         t.classList.add('show');
         setTimeout(() => t.classList.remove('show'), 2500);
-        // Shake size selector
         const sel = card.querySelector('.size-selector');
         sel.style.animation = 'shake 0.4s ease';
         setTimeout(() => sel.style.animation = '', 400);

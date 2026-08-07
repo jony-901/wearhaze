@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In / Sign Up — HAZE</title>
+  <meta name="description" content="Join HAZE — Sign in or create an account to track your orders and get early access.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='85' font-size='80'>🌫</text></svg>">
+  <style>
+    body { background: var(--void); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* Page Layout */
+    .auth-page {
+      flex: 1; display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+    }
+
+    /* Left: Brand Panel */
+    .auth-brand {
+      background: var(--haze-purple);
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      padding: 4rem; position: relative; overflow: hidden;
+    }
+    .auth-brand::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 30% 50%, rgba(139,92,246,0.15) 0%, transparent 70%);
+    }
+    .auth-brand-logo {
+      font-family: var(--font-display);
+      font-size: 6rem; font-weight: 900;
+      text-transform: uppercase; line-height: 0.9;
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 60px var(--accent-glow);
+      position: relative; z-index: 1;
+    }
+    .auth-brand-tagline {
+      font-family: var(--font-label);
+      font-size: 0.7rem; letter-spacing: 0.3em;
+      text-transform: uppercase; color: var(--smoke);
+      margin-top: 1.2rem; position: relative; z-index: 1;
+    }
+    .auth-brand-divider {
+      width: 50px; height: 1px; background: var(--accent);
+      margin: 2rem 0; position: relative; z-index: 1;
+    }
+    .auth-brand-copy {
+      font-family: var(--font-display);
+      font-size: 1.6rem; font-weight: 700;
+      text-transform: uppercase; color: var(--smoke);
+      text-align: center; line-height: 1.4;
+      position: relative; z-index: 1;
+    }
+    .auth-brand-img {
+      position: absolute; bottom: 0; right: -20px; opacity: 0.12;
+      width: 70%; pointer-events: none;
+    }
+    .auth-brand-back {
+      position: absolute; top: 2rem; left: 2rem;
+      font-family: var(--font-label); font-size: 0.65rem;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--smoke); transition: color 0.3s;
+      z-index: 2;
+    }
+    .auth-brand-back:hover { color: var(--ghost); }
+
+    /* Right: Form Panel */
+    .auth-form-panel {
+      display: flex; align-items: center; justify-content: center;
+      padding: 4rem 3rem;
+    }
+    .auth-form-box { width: 100%; max-width: 420px; }
+
+    /* Tabs */
+    .auth-tabs {
+      display: flex; gap: 0; margin-bottom: 2.5rem;
+      border-bottom: 1px solid rgba(107,79,160,0.2);
+    }
+    .auth-tab {
+      flex: 1; padding: 0.8rem; text-align: center;
+      font-family: var(--font-label); font-size: 0.7rem;
+      font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--smoke); cursor: pointer; transition: all 0.3s;
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .auth-tab.active { color: var(--ghost); border-bottom-color: var(--accent); }
+    .auth-tab:hover:not(.active) { color: var(--ash); }
+
+    /* Form */
+    .auth-form { display: none; flex-direction: column; gap: 1.2rem; }
+    .auth-form.active { display: flex; }
+
+    .auth-form-title {
+      font-family: var(--font-display);
+      font-size: 2.2rem; font-weight: 800; text-transform: uppercase;
+      margin-bottom: 0.2rem; line-height: 1;
+    }
+    .auth-form-sub {
+      font-size: 0.85rem; color: var(--ash); margin-bottom: 0.8rem; line-height: 1.5;
+    }
+
+    .field-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .field-group label {
+      font-family: var(--font-label); font-size: 0.6rem;
+      letter-spacing: 0.15em; text-transform: uppercase; color: var(--smoke);
+    }
+    .field-group input {
+      padding: 0.85rem 1rem;
+      background: rgba(107,79,160,0.06);
+      border: 1px solid rgba(107,79,160,0.2);
+      color: var(--ghost); font-family: var(--font-body);
+      font-size: 0.95rem; outline: none; transition: all 0.3s;
+    }
+    .field-group input:focus {
+      border-color: var(--accent);
+      background: rgba(139,92,246,0.06);
+      box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+    }
+    .field-group input::placeholder { color: rgba(196,184,216,0.3); }
+
+    .auth-submit-btn {
+      width: 100%; padding: 1rem;
+      background: var(--accent); color: white;
+      font-family: var(--font-label); font-size: 0.8rem;
+      font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+      border: none; cursor: pointer; transition: all 0.3s;
+      margin-top: 0.5rem;
+    }
+    .auth-submit-btn:hover { background: #7c3aed; box-shadow: 0 0 30px var(--accent-glow); }
+    .auth-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .auth-error {
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);
+      color: #f87171; font-size: 0.82rem; padding: 0.7rem 1rem;
+      display: none;
+    }
+    .auth-success {
+      background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.2);
+      color: #4ade80; font-size: 0.82rem; padding: 0.7rem 1rem;
+      display: none;
+    }
+
+    .auth-divider {
+      display: flex; align-items: center; gap: 1rem;
+      font-size: 0.75rem; color: var(--smoke);
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: ''; flex: 1; height: 1px; background: rgba(107,79,160,0.15);
+    }
+
+    .auth-admin-note {
+      background: rgba(139,92,246,0.08);
+      border: 1px solid rgba(139,92,246,0.2);
+      padding: 0.8rem 1rem; font-size: 0.8rem; color: var(--ash);
+      display: none; align-items: center; gap: 0.6rem;
+    }
+    .auth-admin-note.show { display: flex; }
+
+    /* Password toggle */
+    .field-group .pass-wrap { position: relative; }
+    .field-group .pass-wrap input { width: 100%; padding-right: 3rem; }
+    .pass-toggle {
+      position: absolute; right: 0.8rem; top: 50%; transform: translateY(-50%);
+      color: var(--smoke); cursor: pointer; font-size: 0.85rem; transition: color 0.2s;
+      user-select: none;
+    }
+    .pass-toggle:hover { color: var(--ash); }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .auth-page { grid-template-columns: 1fr; }
+      .auth-brand { display: none; }
+      .auth-form-panel { padding: 2rem 1.5rem; padding-top: 5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP NAV -->
+  <nav class="navbar scrolled" style="position:fixed">
+    <div class="container">
+      <a href="index.html" class="nav-logo">HAZE</a>
+      <div class="nav-links">
+        <a href="index.html">← Back to Store</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="auth-page" style="padding-top:0">
+
+    <!-- LEFT BRAND PANEL -->
+    <div class="auth-brand">
+      <a href="index.html" class="auth-brand-back">← Back to Store</a>
+      <div class="auth-brand-logo">HAZE</div>
+      <div class="auth-brand-tagline">Wear the Haze</div>
+      <div class="auth-brand-divider"></div>
+      <div class="auth-brand-copy">
+        Join the haze.<br>
+        Own your fog.
+      </div>
+      <img class="auth-brand-img" src="images/product-hoodie.png" alt="HAZE Product">
+    </div>
+
+    <!-- RIGHT FORM PANEL -->
+    <div class="auth-form-panel">
+      <div class="auth-form-box">
+
+        <!-- TABS -->
+        <div class="auth-tabs">
+          <div class="auth-tab active" id="tab-signin" onclick="switchTab('signin')">Sign In</div>
+          <div class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Create Account</div>
+        </div>
+
+        <!-- SIGN IN FORM -->
+        <form class="auth-form active" id="form-signin" onsubmit="handleSignIn(event)">
+          <div>
+            <div class="auth-form-title">Welcome back.</div>
+            <div class="auth-form-sub">Sign in to track your orders and manage your account.</div>
+          </div>
+
+          <div id="signin-admin-note" class="auth-admin-note">
+            <span>⚡</span>
+            <span>Admin email detected — you'll have full admin access.</span>
+          </div>
+
+          <div class="auth-error" id="signin-error"></div>
+          <div class="auth-success" id="signin-success"></div>
+
+          <div class="field-group">
+            <label>Email Address</label>
+            <input type="email" id="si-email" placeholder="your@email.com" required autocomplete="email">
+          </div>
+          <div class="field-group">
+            <label>Password</label>
+            <div class="pass-wrap">
+              <input type="password" id="si-pass" placeholder="Your password" required autocomplete="current-password">
+              <span class="pass-toggle" onclick="togglePass('si-pass',this)">👁</span>
+            </div>
+          </div>
+          <button type="submit" class="auth-submit-btn" id="si-btn">Sign In</button>
+          <div class="auth-divider">or</div>
+          <div style="text-align:center;font-size:0.82rem;color:var(--ash)">
+            Don't have an account?
+            <span style="color:var(--accent);cursor:pointer;font-weight:600" onclick="switchTab('signup')">Create one →</span>
+          </div>
+        </form>
+
+        <!-- SIGN UP FORM -->
+        <form class="auth-form" id="form-signup" onsubmit="handleSignUp(event)">
+          <div>
+            <div class="auth-form-title">Join HAZE.</div>
+            <div class="auth-form-sub">Create your account and get early access to new drops.</div>
+          </div>
+
+          <div id="signup-admin-note" class="auth-admin-note">
+            <span>⚡</span>
+            <span>This email will be registered as the admin account.</span>
+          </div>
+
+          <div class="auth-error" id="signup-error"></div>
+          <div class="auth-success" id="signup-success"></div>
+
+          <div class="field-group">
+            <label>Full Name</label>
+            <input type="text" id="su-name" placeholder="Your name" required autocomplete="name">
+          </div>
+          <div class="field-group">
+            <label>Email Address</label>
+            <input type="email" id="su-email" placeholder="your@email.com" required autocomplete="email">
+          </div>
+          <div class="field-group">
+            <label>Password</label>
+            <div class="pass-wrap">
+              <input type="password" id="su-pass" placeholder="Minimum 6 characters" required autocomplete="new-password" minlength="6">
+              <span class="pass-toggle" onclick="togglePass('su-pass',this)">👁</span>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Confirm Password</label>
+            <div class="pass-wrap">
+              <input type="password" id="su-pass2" placeholder="Repeat password" required autocomplete="new-password">
+              <span class="pass-toggle" onclick="togglePass('su-pass2',this)">👁</span>
+            </div>
+          </div>
+          <button type="submit" class="auth-submit-btn" id="su-btn">Create Account</button>
+          <div style="text-align:center;font-size:0.75rem;color:var(--smoke)">
+            By signing up you agree to our terms of use.
+          </div>
+          <div class="auth-divider">or</div>
+          <div style="text-align:center;font-size:0.82rem;color:var(--ash)">
+            Already have an account?
+            <span style="color:var(--accent);cursor:pointer;font-weight:600" onclick="switchTab('signin')">Sign in →</span>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script>
+    // If already logged in, redirect
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = HazeDB.getCurrentUser();
+      if (user) {
+        const redirect = new URLSearchParams(window.location.search).get('redirect') || 'index.html';
+        window.location.href = redirect;
+      }
+
+      // Tab from URL param
+      const tab = new URLSearchParams(window.location.search).get('tab');
+      if (tab === 'signup') switchTab('signup');
+    });
+
+    function switchTab(tab) {
+      document.getElementById('tab-signin').classList.toggle('active', tab === 'signin');
+      document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+      document.getElementById('form-signin').classList.toggle('active', tab === 'signin');
+      document.getElementById('form-signup').classList.toggle('active', tab === 'signup');
+      clearErrors();
+    }
+
+    function clearErrors() {
+      ['signin-error','signin-success','signup-error','signup-success'].forEach(id => {
+        const el = document.getElementById(id);
+        el.style.display = 'none'; el.textContent = '';
+      });
+    }
+
+    function showError(id, msg) {
+      const el = document.getElementById(id);
+      el.textContent = msg; el.style.display = 'block';
+    }
+    function showSuccess(id, msg) {
+      const el = document.getElementById(id);
+      el.textContent = msg; el.style.display = 'block';
+    }
+
+    function togglePass(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+      else { input.type = 'password'; btn.textContent = '👁'; }
+    }
+
+    // Admin note on email input
+    document.getElementById('si-email').addEventListener('input', function() {
+      const isAdmin = this.value.trim().toLowerCase() === HazeDB.ADMIN_EMAIL.toLowerCase();
+      document.getElementById('signin-admin-note').classList.toggle('show', isAdmin);
+    });
+    document.getElementById('su-email').addEventListener('input', function() {
+      const isAdmin = this.value.trim().toLowerCase() === HazeDB.ADMIN_EMAIL.toLowerCase();
+      document.getElementById('signup-admin-note').classList.toggle('show', isAdmin);
+    });
+
+    function handleSignIn(e) {
+      e.preventDefault();
+      clearErrors();
+      const email = document.getElementById('si-email').value;
+      const pass = document.getElementById('si-pass').value;
+      const btn = document.getElementById('si-btn');
+
+      btn.disabled = true; btn.textContent = 'Signing in...';
+
+      setTimeout(() => {
+        const result = HazeDB.loginUser(email, pass);
+        if (result.ok) {
+          showSuccess('signin-success', '✓ Signed in! Redirecting...');
+          setTimeout(() => {
+            const redirect = new URLSearchParams(window.location.search).get('redirect');
+            if (result.user.role === 'admin') {
+              window.location.href = redirect || 'admin.html';
+            } else {
+              window.location.href = redirect || 'index.html';
+            }
+          }, 800);
+        } else {
+          showError('signin-error', result.error);
+          btn.disabled = false; btn.textContent = 'Sign In';
+        }
+      }, 600);
+    }
+
+    function handleSignUp(e) {
+      e.preventDefault();
+      clearErrors();
+      const name = document.getElementById('su-name').value;
+      const email = document.getElementById('su-email').value;
+      const pass = document.getElementById('su-pass').value;
+      const pass2 = document.getElementById('su-pass2').value;
+      const btn = document.getElementById('su-btn');
+
+      if (pass !== pass2) { showError('signup-error', 'Passwords do not match.'); return; }
+      if (pass.length < 6) { showError('signup-error', 'Password must be at least 6 characters.'); return; }
+
+      btn.disabled = true; btn.textContent = 'Creating account...';
+
+      setTimeout(() => {
+        const result = HazeDB.registerUser(name, email, pass);
+        if (result.ok) {
+          showSuccess('signup-success', '✓ Account created! Redirecting...');
+          setTimeout(() => {
+            if (result.user.role === 'admin') {
+              window.location.href = 'admin.html';
+            } else {
+              window.location.href = 'index.html';
+            }
+          }, 800);
+        } else {
+          showError('signup-error', result.error);
+          btn.disabled = false; btn.textContent = 'Create Account';
+        }
+      }, 600);
+    }
+  </script>
+</body>
+</html>
