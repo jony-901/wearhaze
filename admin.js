@@ -519,9 +519,23 @@ async function showProductModal(productId = null) {
             </div>
           </div>
           <div class="form-field form-field-full">
-            <label>Image Path (e.g. images/product-tee.png)</label>
-            <input type="text" id="pf-image" value="${p.image}" placeholder="images/product-name.png">
-            ${p.image ? `<img class="image-preview" src="${p.image}" id="img-preview">` : '<img class="image-preview" id="img-preview" style="display:none">'}
+            <label>Product Image</label>
+            <div class="img-upload-area" id="img-upload-area" onclick="document.getElementById('pf-image-file').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleImgDrop(event)">
+              <div id="img-upload-placeholder">
+                <div style="font-size:2rem;margin-bottom:0.5rem">📷</div>
+                <div style="font-size:0.85rem;color:var(--ash)">Click or drag image here to upload</div>
+                <div style="font-size:0.7rem;color:var(--smoke);margin-top:0.3rem">JPG, PNG, WebP — max 5MB</div>
+              </div>
+              <img id="img-preview" src="${p.image || ''}" style="display:${p.image ? 'block' : 'none'};max-height:180px;max-width:100%;object-fit:contain;margin:auto">
+            </div>
+            <input type="file" id="pf-image-file" accept="image/*" style="display:none" onchange="uploadProductImage(this)">
+            <div id="img-upload-status" style="font-size:0.75rem;margin-top:0.4rem;color:var(--accent)"></div>
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.6rem">
+              <div style="flex:1;height:1px;background:rgba(107,79,160,0.15)"></div>
+              <span style="font-size:0.7rem;color:var(--smoke)">or paste URL</span>
+              <div style="flex:1;height:1px;background:rgba(107,79,160,0.15)"></div>
+            </div>
+            <input type="text" id="pf-image" value="${p.image}" placeholder="https://... or images/product.png" style="margin-top:0.5rem">
           </div>
           <div class="form-field form-field-full">
             <label>Available Sizes (comma separated)</label>
@@ -545,14 +559,64 @@ async function showProductModal(productId = null) {
   `;
   document.body.appendChild(overlay);
 
-  // Image preview on input
+  // Image URL input preview
   document.getElementById('pf-image').addEventListener('input', e => {
     const preview = document.getElementById('img-preview');
-    preview.src = e.target.value;
-    preview.style.display = e.target.value ? 'block' : 'none';
+    const placeholder = document.getElementById('img-upload-placeholder');
+    if (e.target.value) {
+      preview.src = e.target.value;
+      preview.style.display = 'block';
+      if (placeholder) placeholder.style.display = 'none';
+    } else {
+      preview.style.display = 'none';
+      if (placeholder) placeholder.style.display = 'block';
+    }
   });
 
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+async function uploadProductImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  _doImageUpload(file);
+}
+
+function handleImgDrop(event) {
+  event.preventDefault();
+  document.getElementById('img-upload-area').classList.remove('drag-over');
+  const file = event.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) _doImageUpload(file);
+}
+
+async function _doImageUpload(file) {
+  const status = document.getElementById('img-upload-status');
+  const preview = document.getElementById('img-preview');
+  const placeholder = document.getElementById('img-upload-placeholder');
+  status.textContent = '⏳ Uploading...';
+  status.style.color = 'var(--accent)';
+
+  const formData = new FormData();
+  formData.append('image', file);
+
+  try {
+    const res = await fetch('api.php?action=upload_image', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('pf-image').value = data.url;
+      preview.src = data.url;
+      preview.style.display = 'block';
+      if (placeholder) placeholder.style.display = 'none';
+      status.textContent = '✓ Image uploaded!';
+      status.style.color = 'var(--success)';
+    } else {
+      status.textContent = '✕ ' + (data.error || 'Upload failed');
+      status.style.color = 'var(--danger)';
+    }
+  } catch (e) {
+    status.textContent = '✕ Upload error';
+    status.style.color = 'var(--danger)';
+  }
 }
 
 async function saveProduct(productId) {

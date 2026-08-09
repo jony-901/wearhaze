@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product — HAZE</title>
+  <meta name="description" content="Shop HAZE clothing — premium streetwear from Bangladesh.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='85' font-size='80'>🌫</text></svg>">
+  <style>
+    body { background: var(--void); }
+
+    .product-page {
+      min-height: 100vh;
+      padding-top: 90px;
+      padding-bottom: 6rem;
+    }
+
+    .product-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+      margin-top: 2rem;
+    }
+
+    /* ── IMAGE SIDE ── */
+    .product-gallery { position: sticky; top: 100px; }
+    .product-main-img {
+      width: 100%;
+      aspect-ratio: 3/4;
+      object-fit: cover;
+      background: rgba(107,79,160,0.06);
+      display: block;
+    }
+    .product-img-placeholder {
+      width: 100%;
+      aspect-ratio: 3/4;
+      background: rgba(107,79,160,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;
+      color: rgba(107,79,160,0.2);
+    }
+    .product-tag-detail {
+      display: inline-block;
+      padding: 0.3rem 0.8rem;
+      background: var(--accent);
+      color: white;
+      font-family: var(--font-label);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    /* ── INFO SIDE ── */
+    .product-detail-info { padding-top: 0.5rem; }
+
+    .product-breadcrumb {
+      font-family: var(--font-label);
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--smoke);
+      margin-bottom: 1.5rem;
+    }
+    .product-breadcrumb a { color: var(--smoke); text-decoration: none; transition: color 0.3s; }
+    .product-breadcrumb a:hover { color: var(--accent); }
+    .product-breadcrumb span { margin: 0 0.5rem; }
+
+    .product-detail-name {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      text-transform: uppercase;
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+    }
+
+    .product-detail-desc {
+      color: var(--ash);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin-bottom: 1.5rem;
+    }
+
+    .product-detail-price {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--ghost);
+      margin-bottom: 0.3rem;
+    }
+    .product-detail-price .usd {
+      font-size: 1rem;
+      color: var(--smoke);
+      font-weight: 400;
+      margin-left: 0.5rem;
+    }
+
+    .product-divider {
+      height: 1px;
+      background: rgba(107,79,160,0.15);
+      margin: 1.5rem 0;
+    }
+
+    /* Sizes */
+    .size-label {
+      font-family: var(--font-label);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--smoke);
+      margin-bottom: 0.8rem;
+    }
+    .size-grid {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .size-option {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(107,79,160,0.25);
+      font-family: var(--font-label);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      color: var(--ash);
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+    .size-option:hover { border-color: var(--accent); color: var(--ghost); }
+    .size-option.selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+    .size-option.out-of-stock {
+      opacity: 0.3;
+      cursor: not-allowed;
+      text-decoration: line-through;
+    }
+
+    /* Add to Cart */
+    .detail-cart-row {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .qty-control {
+      display: flex;
+      align-items: center;
+      border: 1px solid rgba(107,79,160,0.25);
+    }
+    .qty-btn {
+      width: 40px;
+      height: 52px;
+      background: none;
+      border: none;
+      color: var(--ghost);
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .qty-btn:hover { background: rgba(107,79,160,0.1); }
+    .qty-display {
+      width: 44px;
+      text-align: center;
+      font-family: var(--font-label);
+      font-size: 0.85rem;
+      color: var(--ghost);
+      border-left: 1px solid rgba(107,79,160,0.15);
+      border-right: 1px solid rgba(107,79,160,0.15);
+      line-height: 52px;
+    }
+    .add-to-cart-detail {
+      flex: 1;
+      height: 52px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      font-family: var(--font-label);
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .add-to-cart-detail:hover { background: #7c3aed; box-shadow: 0 0 30px rgba(139,92,246,0.4); }
+    .add-to-cart-detail:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Stock info */
+    .stock-info {
+      font-size: 0.8rem;
+      color: var(--smoke);
+      margin-bottom: 1.5rem;
+    }
+    .stock-info .in-stock { color: #4ade80; }
+    .stock-info .low-stock { color: #fbbf24; }
+    .stock-info .out { color: #f87171; }
+
+    /* Details list */
+    .product-details-list {
+      list-style: none;
+      padding: 0; margin: 0;
+    }
+    .product-details-list li {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid rgba(107,79,160,0.08);
+      font-size: 0.85rem;
+    }
+    .product-details-list li .key {
+      color: var(--smoke);
+      font-family: var(--font-label);
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1.8;
+    }
+    .product-details-list li .val { color: var(--ash); text-transform: capitalize; }
+
+    /* Loading */
+    .product-loading {
+      text-align: center;
+      padding: 6rem 2rem;
+      color: var(--smoke);
+      font-family: var(--font-label);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    /* Not found */
+    .product-not-found {
+      text-align: center;
+      padding: 6rem 2rem;
+    }
+    .product-not-found h2 {
+      font-family: var(--font-display);
+      font-size: 3rem;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .product-layout { grid-template-columns: 1fr; gap: 2rem; }
+      .product-gallery { position: static; }
+    }
+    @media (max-width: 600px) {
+      .detail-cart-row { flex-direction: column; align-items: stretch; }
+      .add-to-cart-detail { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar scrolled" id="navbar">
+    <div class="container">
+      <a href="index.html" class="nav-logo">HAZE</a>
+      <div class="nav-links">
+        <a href="index.html#products">Collection</a>
+        <a href="index.html#lookbook">Lookbook</a>
+        <a href="account.html" class="nav-link-account" id="nav-account-link">Account</a>
+      </div>
+      <div class="nav-actions">
+        <button class="cart-toggle" id="cart-icon" aria-label="Cart">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <path d="M16 10a4 4 0 01-8 0"/>
+          </svg>
+          <span class="cart-count" id="cart-count" style="display:none">0</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- CART DRAWER -->
+  <div class="cart-overlay" id="cart-overlay"></div>
+  <div class="cart-drawer" id="cart-drawer">
+    <div class="cart-header">
+      <div class="cart-title">Your Cart</div>
+      <button class="cart-close" id="cart-close">✕</button>
+    </div>
+    <div class="cart-body" id="cart-body"></div>
+    <div class="cart-footer" id="cart-footer" style="display:none">
+      <div class="cart-totals">
+        <div class="cart-total-row"><span>Subtotal</span><span id="cart-total-amt">৳ 0</span></div>
+        <div class="cart-total-row"><span>Shipping</span><span id="cart-shipping-amt">৳ 80</span></div>
+        <div class="cart-total-row grand"><span>Total</span><span id="cart-grand-total">৳ 80</span></div>
+      </div>
+      <button class="cart-checkout-btn" id="cart-checkout-btn">Checkout →</button>
+    </div>
+  </div>
+
+  <div class="product-page">
+    <div class="container">
+      <div id="product-content">
+        <div class="product-loading">🌫 Loading product...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="haze-toast" id="haze-toast"></div>
+
+  <script src="data.js"></script>
+  <script src="cart.js"></script>
+  <script>
+    let currentProduct = null;
+    let selectedQty = 1;
+    let selectedSize = null;
+
+    async function loadProduct() {
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get('id');
+
+      if (!productId) {
+        showNotFound();
+        return;
+      }
+
+      const product = await HazeDB.getProduct(productId);
+      if (!product) {
+        showNotFound();
+        return;
+      }
+
+      currentProduct = product;
+      document.title = product.name + ' — HAZE';
+
+      const sizes = Array.isArray(product.sizes) ? product.sizes : (product.sizes || '').split(',').map(s => s.trim()).filter(Boolean);
+      const stockColor = product.stock === 0 ? 'out' : product.stock < 10 ? 'low-stock' : 'in-stock';
+      const stockText = product.stock === 0 ? 'Out of Stock' : product.stock < 10 ? `Only ${product.stock} left!` : `${product.stock} in stock`;
+
+      document.getElementById('product-content').innerHTML = `
+        <div class="product-layout">
+
+          <!-- IMAGE -->
+          <div class="product-gallery">
+            ${product.tag ? `<div class="product-tag-detail">${product.tag}</div>` : ''}
+            ${product.image
+              ? `<img class="product-main-img" src="${product.image}" alt="${product.name}" id="main-product-img">`
+              : `<div class="product-img-placeholder">🌫</div>`
+            }
+          </div>
+
+          <!-- INFO -->
+          <div class="product-detail-info">
+            <div class="product-breadcrumb">
+              <a href="index.html">Home</a>
+              <span>›</span>
+              <a href="index.html#products">Collection</a>
+              <span>›</span>
+              ${product.name}
+            </div>
+
+            <h1 class="product-detail-name">${product.name}</h1>
+
+            <div class="product-detail-price">
+              ৳ ${product.price.toLocaleString()}
+              ${product.priceUSD ? `<span class="usd">~$${product.priceUSD}</span>` : ''}
+            </div>
+
+            ${product.description ? `<p class="product-detail-desc">${product.description}</p>` : ''}
+
+            <div class="product-divider"></div>
+
+            <!-- SIZE SELECTOR -->
+            <div class="size-label">Select Size</div>
+            <div class="size-grid" id="detail-size-grid">
+              ${sizes.map(s => `
+                <div class="size-option" data-size="${s}" onclick="selectSize('${s}', this)">
+                  ${s}
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- STOCK -->
+            <div class="stock-info">
+              <span class="${stockColor}">${stockText}</span>
+            </div>
+
+            <!-- ADD TO CART -->
+            <div class="detail-cart-row">
+              <div class="qty-control">
+                <button class="qty-btn" onclick="changeQty(-1)">−</button>
+                <div class="qty-display" id="qty-display">1</div>
+                <button class="qty-btn" onclick="changeQty(1)">+</button>
+              </div>
+              <button class="add-to-cart-detail" id="detail-cart-btn" onclick="addToCartDetail()" ${product.stock === 0 ? 'disabled' : ''}>
+                ${product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+              </button>
+            </div>
+
+            <div class="product-divider"></div>
+
+            <!-- PRODUCT DETAILS -->
+            <ul class="product-details-list">
+              <li><span class="key">Category</span><span class="val">${product.category}</span></li>
+              ${sizes.length ? `<li><span class="key">Available Sizes</span><span class="val">${sizes.join(', ')}</span></li>` : ''}
+              ${product.stock > 0 ? `<li><span class="key">Stock</span><span class="val">${product.stock} units</span></li>` : ''}
+              <li><span class="key">Payment</span><span class="val">COD · bKash · Nagad</span></li>
+              <li><span class="key">Delivery</span><span class="val">Nationwide — ৳ 80</span></li>
+            </ul>
+          </div>
+
+        </div>
+      `;
+    }
+
+    function selectSize(size, el) {
+      document.querySelectorAll('.size-option').forEach(b => b.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedSize = size;
+    }
+
+    function changeQty(delta) {
+      selectedQty = Math.max(1, Math.min(10, selectedQty + delta));
+      document.getElementById('qty-display').textContent = selectedQty;
+    }
+
+    async function addToCartDetail() {
+      if (!selectedSize) {
+        const toast = document.getElementById('haze-toast');
+        toast.textContent = '⚠ Please select a size';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2500);
+        // Shake size grid
+        const grid = document.getElementById('detail-size-grid');
+        grid.style.animation = 'shake 0.4s ease';
+        setTimeout(() => grid.style.animation = '', 400);
+        return;
+      }
+      for (let i = 0; i < selectedQty; i++) {
+        HazeDB.addToCart(currentProduct.id, selectedSize, 1);
+      }
+      // Correct qty (addToCart increments, so we need to set exact)
+      HazeDB.updateCartQty(currentProduct.id, selectedSize, selectedQty);
+      await HazeCart.renderDrawer();
+      HazeCart.openDrawer();
+      const toast = document.getElementById('haze-toast');
+      toast.textContent = '✓ Added to cart';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    function showNotFound() {
+      document.getElementById('product-content').innerHTML = `
+        <div class="product-not-found">
+          <div style="font-size:4rem;margin-bottom:1rem">🌫</div>
+          <h2>Product Not Found</h2>
+          <p style="color:var(--ash);margin-bottom:2rem">This product may be out of stock or no longer available.</p>
+          <a href="index.html#products" class="btn" style="display:inline-block;padding:1rem 2rem;background:var(--accent);color:white;text-decoration:none;font-family:var(--font-label);font-size:0.8rem;letter-spacing:0.2em;text-transform:uppercase">Browse Collection</a>
+        </div>
+      `;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadProduct();
+      HazeCart.init();
+    });
+  </script>
+</body>
+</html>

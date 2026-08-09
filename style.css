@@ -454,31 +454,63 @@ ul { list-style: none; }
   background: var(--accent); color: white;
 }
 
-/* ── QUICK VIEW BUTTON ──────────────────────────────── */
-.quick-view-btn {
+/* ── PRODUCT CARD ACTIONS ───────────────────────────── */
+.product-card-actions {
   position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%, -50%) scale(0.9);
-  background: rgba(13, 11, 18, 0.85);
+  transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; gap: 0.5rem; align-items: center;
+  opacity: 0; visibility: hidden;
+  transition: all 0.3s var(--transition);
+  z-index: 10;
+  width: 80%;
+}
+.product-card:hover .product-card-actions {
+  opacity: 1; visibility: visible;
+}
+
+.quick-view-btn {
+  width: 100%;
+  background: rgba(13, 11, 18, 0.9);
   color: var(--ghost);
   font-family: var(--font-label);
   font-size: 0.65rem; font-weight: 500;
   letter-spacing: 0.15em; text-transform: uppercase;
-  padding: 0.8rem 1.5rem;
+  padding: 0.75rem 1rem;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  opacity: 0; visibility: hidden;
   transition: all 0.3s var(--transition);
   backdrop-filter: blur(8px);
-  z-index: 10;
-  white-space: nowrap;
+  white-space: nowrap; cursor: pointer;
+  transform: translateY(4px);
 }
-.product-card:hover .quick-view-btn {
-  opacity: 1; visibility: visible;
-  transform: translate(-50%, -50%) scale(1);
-}
+.product-card:hover .quick-view-btn { transform: translateY(0); }
 .quick-view-btn:hover {
   background: var(--accent);
   border-color: var(--accent);
   color: white;
+}
+
+.view-detail-btn {
+  width: 100%;
+  display: block;
+  text-align: center;
+  background: var(--accent);
+  color: white;
+  font-family: var(--font-label);
+  font-size: 0.65rem; font-weight: 500;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.75rem 1rem;
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: all 0.3s var(--transition);
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+  transform: translateY(4px);
+  box-sizing: border-box;
+}
+.product-card:hover .view-detail-btn { transform: translateY(0); }
+.view-detail-btn:hover {
+  background: #7c3aed;
+  box-shadow: 0 0 20px rgba(139,92,246,0.4);
 }
 
 /* ── QUICK VIEW MODAL ───────────────────────────────── */

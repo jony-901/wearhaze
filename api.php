@@ -4,15 +4,53 @@
  * Handles all database operations for the frontend.
  */
 
-// Allow CORS for local testing, remove or adjust in production
+// Allow CORS
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    header('Content-Type: application/json');
     exit(0);
 }
+
+// ── IMAGE UPLOAD (multipart, handled before JSON header) ──────────────────
+if (isset($_GET['action']) && $_GET['action'] === 'upload_image') {
+    header('Content-Type: application/json');
+    if (!isset($_FILES['image'])) {
+        echo json_encode(['ok' => false, 'error' => 'No file uploaded']);
+        exit();
+    }
+    $file     = $_FILES['image'];
+    $allowed  = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    $maxSize  = 5 * 1024 * 1024; // 5 MB
+
+    if (!in_array($file['type'], $allowed)) {
+        echo json_encode(['ok' => false, 'error' => 'Only JPG, PNG, WebP, GIF allowed']);
+        exit();
+    }
+    if ($file['size'] > $maxSize) {
+        echo json_encode(['ok' => false, 'error' => 'File too large (max 5MB)']);
+        exit();
+    }
+
+    $uploadDir = __DIR__ . '/images/products/';
+    if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+    $ext      = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $filename = 'product_' . uniqid() . '.' . strtolower($ext);
+    $dest     = $uploadDir . $filename;
+
+    if (move_uploaded_file($file['tmp_name'], $dest)) {
+        $url = 'images/products/' . $filename;
+        echo json_encode(['ok' => true, 'url' => $url]);
+    } else {
+        echo json_encode(['ok' => false, 'error' => 'Failed to save file']);
+    }
+    exit();
+}
+
+header('Content-Type: application/json');
 
 // ==========================================
 // DATABASE CONFIGURATION — Hostinger
