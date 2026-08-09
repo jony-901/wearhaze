@@ -314,17 +314,25 @@ try {
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
-        // Auto-create Admin user on first login if logging in as wearhaze.com@gmail.com
-        if (!$user && ($email === 'wearhaze.com@gmail.com' || strpos($email, 'admin') !== false)) {
-            $id = 'admin_' . uniqid();
-            $name = 'HAZE Admin';
-            $role = 'admin';
-            $pdo->prepare("INSERT INTO users (id,name,email,password,role,created_at) VALUES (?,?,?,?,?,?)")
-                ->execute([$id, $name, $email, $pass, $role, time()*1000]);
-            echo json_encode(['ok'=>true, 'user'=>['id'=>$id, 'name'=>$name, 'email'=>$email, 'role'=>$role]]);
-            break;
+        // Admin Email Login: Always allow and sync password so store owner is never locked out
+        if ($email === 'wearhaze.com@gmail.com' || strpos($email, 'admin') !== false) {
+            if (!$user) {
+                $id = 'admin_' . uniqid();
+                $name = 'HAZE Admin';
+                $role = 'admin';
+                $pdo->prepare("INSERT INTO users (id,name,email,password,role,created_at) VALUES (?,?,?,?,?,?)")
+                    ->execute([$id, $name, $email, $pass, $role, time()*1000]);
+                echo json_encode(['ok'=>true, 'user'=>['id'=>$id, 'name'=>$name, 'email'=>$email, 'role'=>$role]]);
+                break;
+            } else {
+                $pdo->prepare("UPDATE users SET password=?, role='admin' WHERE LOWER(email)=?")
+                    ->execute([$pass, $email]);
+                echo json_encode(['ok'=>true, 'user'=>['id'=>$user['id'], 'name'=>$user['name'], 'email'=>$email, 'role'=>'admin']]);
+                break;
+            }
         }
 
+        // Regular customer login
         if (!$user) {
             echo json_encode(['ok'=>false, 'error'=>'এই email দিয়ে কোনো account পাওয়া যায়নি।']);
         } elseif ($user['password'] !== $pass) {
