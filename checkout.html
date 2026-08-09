@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Checkout — HAZE</title>
   <meta name="description" content="Complete your HAZE order securely.">
-  <link rel="stylesheet" href="style.css?v=8.0">
-  <link rel="stylesheet" href="checkout.css?v=8.0">
+  <link rel="stylesheet" href="style.css?v=9.0">
+  <link rel="stylesheet" href="checkout.css?v=9.0">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='85' font-size='80'>🌫</text></svg>">
 </head>
 <body class="checkout-page">
@@ -61,12 +61,97 @@
                 <textarea id="co-address" rows="2" placeholder="House/Flat, Road, Area" required></textarea>
               </div>
               <div class="form-group">
-                <label for="co-city">City *</label>
-                <input type="text" id="co-city" placeholder="Dhaka" required>
+                <label for="co-city">City / Thana *</label>
+                <input type="text" id="co-city" placeholder="e.g. Mirpur, Gulshan" required>
               </div>
               <div class="form-group">
-                <label for="co-district">District *</label>
-                <input type="text" id="co-district" placeholder="Dhaka" required>
+                <label for="co-district">District * <span style="font-size:0.7rem;color:var(--accent);font-weight:600" id="delivery-badge"></span></label>
+                <select id="co-district" required onchange="onDistrictChange(this.value)">
+                  <option value="">— Select District —</option>
+                  <optgroup label="Dhaka Division">
+                    <option value="Dhaka">Dhaka</option>
+                    <option value="Gazipur">Gazipur</option>
+                    <option value="Narayanganj">Narayanganj</option>
+                    <option value="Narsingdi">Narsingdi</option>
+                    <option value="Manikganj">Manikganj</option>
+                    <option value="Munshiganj">Munshiganj</option>
+                    <option value="Rajbari">Rajbari</option>
+                    <option value="Madaripur">Madaripur</option>
+                    <option value="Shariatpur">Shariatpur</option>
+                    <option value="Faridpur">Faridpur</option>
+                    <option value="Gopalganj">Gopalganj</option>
+                    <option value="Kishoreganj">Kishoreganj</option>
+                    <option value="Tangail">Tangail</option>
+                  </optgroup>
+                  <optgroup label="Chittagong Division">
+                    <option value="Chittagong">Chittagong</option>
+                    <option value="Cox's Bazar">Cox's Bazar</option>
+                    <option value="Comilla">Comilla</option>
+                    <option value="Noakhali">Noakhali</option>
+                    <option value="Feni">Feni</option>
+                    <option value="Lakshmipur">Lakshmipur</option>
+                    <option value="Chandpur">Chandpur</option>
+                    <option value="Brahmanbaria">Brahmanbaria</option>
+                    <option value="Rangamati">Rangamati</option>
+                    <option value="Khagrachhari">Khagrachhari</option>
+                    <option value="Bandarban">Bandarban</option>
+                  </optgroup>
+                  <optgroup label="Rajshahi Division">
+                    <option value="Rajshahi">Rajshahi</option>
+                    <option value="Bogura">Bogura</option>
+                    <option value="Pabna">Pabna</option>
+                    <option value="Sirajganj">Sirajganj</option>
+                    <option value="Natore">Natore</option>
+                    <option value="Naogaon">Naogaon</option>
+                    <option value="Chapainawabganj">Chapainawabganj</option>
+                    <option value="Joypurhat">Joypurhat</option>
+                  </optgroup>
+                  <optgroup label="Khulna Division">
+                    <option value="Khulna">Khulna</option>
+                    <option value="Jessore">Jessore</option>
+                    <option value="Satkhira">Satkhira</option>
+                    <option value="Bagerhat">Bagerhat</option>
+                    <option value="Narail">Narail</option>
+                    <option value="Magura">Magura</option>
+                    <option value="Jhenaidah">Jhenaidah</option>
+                    <option value="Kushtia">Kushtia</option>
+                    <option value="Meherpur">Meherpur</option>
+                    <option value="Chuadanga">Chuadanga</option>
+                  </optgroup>
+                  <optgroup label="Barishal Division">
+                    <option value="Barishal">Barishal</option>
+                    <option value="Bhola">Bhola</option>
+                    <option value="Patuakhali">Patuakhali</option>
+                    <option value="Pirojpur">Pirojpur</option>
+                    <option value="Jhalokathi">Jhalokathi</option>
+                    <option value="Barguna">Barguna</option>
+                  </optgroup>
+                  <optgroup label="Sylhet Division">
+                    <option value="Sylhet">Sylhet</option>
+                    <option value="Moulvibazar">Moulvibazar</option>
+                    <option value="Habiganj">Habiganj</option>
+                    <option value="Sunamganj">Sunamganj</option>
+                  </optgroup>
+                  <optgroup label="Rangpur Division">
+                    <option value="Rangpur">Rangpur</option>
+                    <option value="Dinajpur">Dinajpur</option>
+                    <option value="Gaibandha">Gaibandha</option>
+                    <option value="Kurigram">Kurigram</option>
+                    <option value="Lalmonirhat">Lalmonirhat</option>
+                    <option value="Nilphamari">Nilphamari</option>
+                    <option value="Panchagarh">Panchagarh</option>
+                    <option value="Thakurgaon">Thakurgaon</option>
+                  </optgroup>
+                  <optgroup label="Mymensingh Division">
+                    <option value="Mymensingh">Mymensingh</option>
+                    <option value="Netrokona">Netrokona</option>
+                    <option value="Jamalpur">Jamalpur</option>
+                    <option value="Sherpur">Sherpur</option>
+                  </optgroup>
+                </select>
+
+                <!-- Delivery info banner -->
+                <div id="delivery-info-box" style="display:none;margin-top:0.5rem;padding:0.5rem 0.75rem;border-radius:4px;font-size:0.78rem;font-weight:600"></div>
               </div>
               <div class="form-group">
                 <label for="co-zip">Postal Code</label>
@@ -116,7 +201,7 @@
               </label>
             </div>
 
-            <!-- bKash/Nagad instructions (shown when selected) -->
+            <!-- bKash/Nagad instructions -->
             <div id="mobile-payment-info" class="mobile-payment-info" style="display:none">
               <div class="mpay-step">1. Send <strong id="mpay-amount"></strong> to <strong id="mpay-number"></strong></div>
               <div class="mpay-step">2. Copy your Transaction ID (TrxID)</div>
@@ -161,11 +246,17 @@
 
             <div class="summary-row"><span>Subtotal</span><span id="sum-subtotal">৳ 0</span></div>
             <div class="summary-row" id="discount-row" style="display:none;color:#4ade80"><span>Discount</span><span id="sum-discount">−৳ 0</span></div>
-            <div class="summary-row"><span>Shipping</span><span>৳ 80</span></div>
+            <div class="summary-row">
+              <span>
+                Shipping
+                <span id="ship-label" style="font-size:0.7rem;color:var(--smoke);display:block;margin-top:0.1rem">— Select district</span>
+              </span>
+              <span id="sum-shipping" style="font-weight:700">৳ —</span>
+            </div>
             <div class="summary-divider"></div>
             <div class="summary-row total-row">
               <span>Total</span>
-              <span id="sum-total">৳ 80</span>
+              <span id="sum-total">৳ —</span>
             </div>
           </div>
         </div>
@@ -189,31 +280,94 @@
     </div>
   </div>
 
-  <script src="data.js?v=8.0"></script>
+  <script src="data.js?v=9.0"></script>
   <script>
-    let appliedDiscount = 0;
+    /* ── DELIVERY CHARGE LOGIC ───────────────────────── */
+    const DHAKA_CHARGE    = 80;
+    const OUTSIDE_CHARGE  = 120;
+    const DHAKA_DISTRICTS = ['Dhaka','Gazipur','Narayanganj','Narsingdi','Manikganj','Munshiganj'];
+
+    let currentShipping   = 0;   // 0 = not selected yet
+    let appliedDiscount   = 0;
     let appliedCouponCode = '';
+    let subtotal          = 0;
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      const settings = await HazeDB.getSettings();
+    function isInsideDhaka(district) {
+      return DHAKA_DISTRICTS.includes(district);
+    }
 
-      // Fill payment numbers
-      const bkNum = document.getElementById('bkash-num');
-      const ngNum = document.getElementById('nagad-num');
-      if (bkNum) bkNum.textContent = settings.bkash || '01XXXXXXXXX';
-      if (ngNum) ngNum.textContent = settings.nagad || '01XXXXXXXXX';
-
-      // Render order summary
-      const items = await HazeDB.getCartItems();
-      const subtotal = await HazeDB.getCartTotal();
-      const sumItems = document.getElementById('summary-items');
-
-      if (items.length === 0) {
-        window.location.href = 'index.html';
+    function onDistrictChange(district) {
+      if (!district) {
+        currentShipping = 0;
+        document.getElementById('delivery-badge').textContent   = '';
+        document.getElementById('delivery-info-box').style.display = 'none';
+        document.getElementById('ship-label').textContent = '— Select district';
+        document.getElementById('sum-shipping').textContent = '৳ —';
+        updateTotals();
         return;
       }
 
-      sumItems.innerHTML = items.map(item => `
+      const inside = isInsideDhaka(district);
+      currentShipping = inside ? DHAKA_CHARGE : OUTSIDE_CHARGE;
+
+      // Badge
+      const badge = document.getElementById('delivery-badge');
+      badge.textContent = inside ? '📍 Inside Dhaka' : '🚚 Outside Dhaka';
+
+      // Info box
+      const box = document.getElementById('delivery-info-box');
+      box.style.display     = 'block';
+      box.style.background  = inside ? 'rgba(74,222,128,0.08)' : 'rgba(251,191,36,0.08)';
+      box.style.border      = inside ? '1px solid rgba(74,222,128,0.25)' : '1px solid rgba(251,191,36,0.25)';
+      box.style.color       = inside ? '#4ade80' : '#fbbf24';
+      box.textContent       = inside
+        ? `✓ Inside Dhaka — Delivery Charge: ৳${DHAKA_CHARGE}`
+        : `✓ Outside Dhaka — Delivery Charge: ৳${OUTSIDE_CHARGE}`;
+
+      // Sidebar ship label
+      document.getElementById('ship-label').textContent = inside ? 'Inside Dhaka' : 'Outside Dhaka';
+      updateTotals();
+    }
+
+    function updateTotals() {
+      const shipping   = currentShipping;
+      const discounted = Math.max(0, subtotal - appliedDiscount);
+      const total      = shipping > 0 ? discounted + shipping : 0;
+
+      document.getElementById('sum-subtotal').textContent  = '৳ ' + subtotal.toLocaleString();
+      document.getElementById('sum-shipping').textContent  = shipping > 0 ? '৳ ' + shipping : '৳ —';
+      document.getElementById('sum-total').textContent     = total > 0
+        ? '৳ ' + total.toLocaleString()
+        : '৳ —';
+
+      const mpAmt = document.getElementById('mpay-amount');
+      if (mpAmt && total > 0) mpAmt.textContent = '৳ ' + total.toLocaleString();
+
+      if (appliedDiscount > 0) {
+        document.getElementById('discount-row').style.display = 'flex';
+        document.getElementById('sum-discount').textContent   = '−৳ ' + appliedDiscount.toLocaleString();
+      } else {
+        document.getElementById('discount-row').style.display = 'none';
+      }
+    }
+
+    /* ── PAGE INIT ───────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', async () => {
+      const settings = await HazeDB.getSettings();
+
+      // Payment numbers
+      const bkEl = document.getElementById('bkash-num');
+      const ngEl = document.getElementById('nagad-num');
+      if (bkEl) bkEl.textContent = settings.bkash || '01XXXXXXXXX';
+      if (ngEl) ngEl.textContent = settings.nagad || '01XXXXXXXXX';
+
+      // Cart items
+      const items = await HazeDB.getCartItems();
+      subtotal    = await HazeDB.getCartTotal();
+
+      if (items.length === 0) { window.location.href = 'index.html'; return; }
+
+      document.getElementById('summary-items').innerHTML = items.map(item => `
         <div class="summary-item">
           <img src="${item.product.image}" alt="${item.product.name}">
           <div class="summary-item-info">
@@ -224,98 +378,82 @@
         </div>
       `).join('');
 
-      function updateTotals() {
-        const total = Math.max(0, subtotal - appliedDiscount + 80);
-        document.getElementById('sum-subtotal').textContent = '৳ ' + subtotal.toLocaleString();
-        document.getElementById('sum-total').textContent = '৳ ' + total.toLocaleString();
-
-        const mpAmt = document.getElementById('mpay-amount');
-        if (mpAmt) mpAmt.textContent = '৳ ' + total.toLocaleString();
-
-        if (appliedDiscount > 0) {
-          document.getElementById('discount-row').style.display = 'flex';
-          document.getElementById('sum-discount').textContent = '−৳ ' + appliedDiscount.toLocaleString();
-        } else {
-          document.getElementById('discount-row').style.display = 'none';
-        }
-      }
       updateTotals();
 
-      // Coupon application
+      /* Coupon */
       document.getElementById('co-apply-coupon-btn').addEventListener('click', async () => {
-        const codeInput = document.getElementById('co-coupon-input');
-        const msgDiv    = document.getElementById('coupon-message');
-        const code      = codeInput.value.trim();
-
+        const code   = document.getElementById('co-coupon-input').value.trim();
+        const msgDiv = document.getElementById('coupon-message');
         if (!code) {
           msgDiv.style.display = 'block';
-          msgDiv.style.color = '#f87171';
-          msgDiv.textContent = 'Coupon code লিখুন।';
+          msgDiv.style.color   = '#f87171';
+          msgDiv.textContent   = 'Coupon code লিখুন।';
           return;
         }
-
         const res = await HazeDB.validateCoupon(code, subtotal);
         msgDiv.style.display = 'block';
-
         if (res && res.ok) {
           appliedDiscount   = res.discount;
           appliedCouponCode = res.code;
-          msgDiv.style.color = '#4ade80';
-          msgDiv.textContent = '✓ ' + res.message;
-          updateTotals();
+          msgDiv.style.color   = '#4ade80';
+          msgDiv.textContent   = '✓ ' + res.message;
         } else {
           appliedDiscount   = 0;
           appliedCouponCode = '';
-          msgDiv.style.color = '#f87171';
-          msgDiv.textContent = '✕ ' + ((res && res.error) || 'Invalid coupon.');
-          updateTotals();
+          msgDiv.style.color   = '#f87171';
+          msgDiv.textContent   = '✕ ' + ((res && res.error) || 'Invalid coupon.');
         }
+        updateTotals();
       });
 
-      // Payment toggle
+      /* Payment toggle */
       document.querySelectorAll('input[name="payment"]').forEach(radio => {
         radio.addEventListener('change', () => {
           const mpInfo = document.getElementById('mobile-payment-info');
-          const mpAmt = document.getElementById('mpay-amount');
-          const mpNum = document.getElementById('mpay-number');
-          const total = Math.max(0, subtotal - appliedDiscount + 80);
+          const mpNum  = document.getElementById('mpay-number');
+          const total  = Math.max(0, subtotal - appliedDiscount) + currentShipping;
           if (radio.value === 'bkash') {
             mpInfo.style.display = 'block';
-            mpAmt.textContent = '৳ ' + total.toLocaleString();
-            mpNum.textContent = settings.bkash || '01XXXXXXXXX';
+            mpNum.textContent    = settings.bkash || '01XXXXXXXXX';
           } else if (radio.value === 'nagad') {
             mpInfo.style.display = 'block';
-            mpAmt.textContent = '৳ ' + total.toLocaleString();
-            mpNum.textContent = settings.nagad || '01XXXXXXXXX';
+            mpNum.textContent    = settings.nagad || '01XXXXXXXXX';
           } else {
             mpInfo.style.display = 'none';
           }
           document.querySelectorAll('.payment-card').forEach(c => c.classList.remove('selected'));
           radio.closest('.payment-option').querySelector('.payment-card').classList.add('selected');
+          updateTotals();
         });
       });
-      document.querySelector('input[name="payment"]:checked').closest('.payment-option').querySelector('.payment-card').classList.add('selected');
+      document.querySelector('input[name="payment"]:checked')
+        .closest('.payment-option').querySelector('.payment-card').classList.add('selected');
 
-      // Place order
       document.getElementById('place-order-btn').addEventListener('click', placeOrder);
     });
 
+    /* ── PLACE ORDER ────────────────────────────────── */
     async function placeOrder() {
-      const name = document.getElementById('co-name').value.trim();
-      const phone = document.getElementById('co-phone').value.trim();
-      const address = document.getElementById('co-address').value.trim();
-      const city = document.getElementById('co-city').value.trim();
-      const district = document.getElementById('co-district').value.trim();
-      const payment = document.querySelector('input[name="payment"]:checked').value;
-      const trxid = document.getElementById('co-trxid')?.value.trim();
-      const notes = document.getElementById('co-notes').value.trim();
+      const name     = document.getElementById('co-name').value.trim();
+      const phone    = document.getElementById('co-phone').value.trim();
+      const address  = document.getElementById('co-address').value.trim();
+      const city     = document.getElementById('co-city').value.trim();
+      const district = document.getElementById('co-district').value;
+      const payment  = document.querySelector('input[name="payment"]:checked').value;
+      const trxid    = document.getElementById('co-trxid')?.value.trim() || '';
+      const notes    = document.getElementById('co-notes').value.trim();
 
       if (!name || !phone || !address || !city || !district) {
-        alert('Please fill in all required fields.');
+        alert('সব required field পূরণ করুন।');
+        return;
+      }
+      if (!currentShipping) {
+        alert('District সিলেক্ট করুন।');
+        document.getElementById('co-district').focus();
         return;
       }
       if ((payment === 'bkash' || payment === 'nagad') && !trxid) {
-        alert('Please enter your Transaction ID (TrxID).');
+        alert('Transaction ID (TrxID) দিন।');
         return;
       }
 
@@ -323,22 +461,22 @@
       btn.disabled = true;
       document.getElementById('place-order-text').textContent = 'Placing Order...';
 
+      // Pass shipping charge to createOrder
       const order = await HazeDB.createOrder({
         name, phone,
-        email: document.getElementById('co-email').value.trim(),
-        address,
-        city,
-        district,
-        zip: document.getElementById('co-zip').value.trim(),
-        notes,
-        trxid: trxid || '',
-        discount: appliedDiscount,
-        couponCode: appliedCouponCode
+        email:      document.getElementById('co-email').value.trim(),
+        address, city, district,
+        zip:        document.getElementById('co-zip').value.trim(),
+        notes, trxid: trxid || '',
+        discount:   appliedDiscount,
+        couponCode: appliedCouponCode,
+        shipping:   currentShipping
       }, payment);
 
       if (order) {
         document.getElementById('modal-order-id').textContent = order.orderId;
         document.getElementById('success-modal').style.display = 'flex';
+        HazeDB.clearCart();
       } else {
         alert('Something went wrong. Please try again.');
         btn.disabled = false;
@@ -348,4 +486,3 @@
   </script>
 </body>
 </html>
-

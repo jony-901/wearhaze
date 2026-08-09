@@ -148,10 +148,12 @@ const HazeDB = (() => {
   async function createOrder(customer, paymentMethod) {
     const items = await getCartItems();
     if (items.length === 0) return null;
-    const subtotal = await getCartTotal();
-    const discount = customer.discount || 0;
+    const subtotal   = await getCartTotal();
+    const discount   = customer.discount   || 0;
     const couponCode = customer.couponCode || '';
-    const total = Math.max(0, subtotal - discount + 80);
+    // Use shipping from checkout (80 inside Dhaka, 120 outside), fallback to 80
+    const shipping   = customer.shipping   || 80;
+    const total      = Math.max(0, subtotal - discount + shipping);
     const order = {
       orderId: generateOrderId(),
       customer,
@@ -159,7 +161,7 @@ const HazeDB = (() => {
         productId: i.productId, name: i.product.name, size: i.size,
         qty: i.qty, price: i.product.price, image: i.product.image
       })),
-      subtotal, shipping: 80, discount, couponCode, total,
+      subtotal, shipping, discount, couponCode, total,
       paymentMethod, status: 'pending',
       statusHistory: [{ status: 'pending', date: Date.now(), note: 'Order placed' }],
       createdAt: Date.now()

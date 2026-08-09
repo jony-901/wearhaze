@@ -200,6 +200,12 @@ async function navigateTo(page) {
 ══════════════════════════════════════════════════════ */
 async function renderDashboard() {
   const analytics = await HazeDB.getAnalytics();
+  // Also directly get product count to ensure accuracy
+  try {
+    const allProducts = await HazeDB.getProducts();
+    analytics.totalProducts = allProducts.length;
+    analytics.totalStock = allProducts.reduce((s, p) => s + (parseInt(p.stock) || 0), 0);
+  } catch(e) {}
   const content = document.getElementById('admin-content');
 
   content.innerHTML = `
@@ -217,10 +223,10 @@ async function renderDashboard() {
         <div class="stat-card-value">${analytics.totalOrders}</div>
         <div class="stat-card-sub">${analytics.pendingOrders} pending</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" onclick="navigateTo('products')" style="cursor:pointer">
         <div class="stat-card-icon">👕</div>
         <div class="stat-card-label">Products</div>
-        <div class="stat-card-value">${analytics.totalProducts}</div>
+        <div class="stat-card-value" id="dash-product-count">${analytics.totalProducts}</div>
         <div class="stat-card-sub">${analytics.totalStock} in stock</div>
       </div>
       <div class="stat-card">
@@ -578,11 +584,18 @@ async function showProductModal(productId = null) {
             </div>
             <div class="form-field">
               <label>Category</label>
-              <select id="pf-category">
+              <select id="pf-category" onchange="toggleCustomCategory(this)">
                 <option value="tops" ${p.category==='tops'?'selected':''}>Tops (Tees, Hoodies)</option>
                 <option value="bottoms" ${p.category==='bottoms'?'selected':''}>Bottoms (Pants, Cargo)</option>
                 <option value="accessories" ${p.category==='accessories'?'selected':''}>Accessories (Caps, Bags)</option>
+                <option value="outerwear" ${p.category==='outerwear'?'selected':''}>Outerwear (Jackets, Coats)</option>
+                <option value="footwear" ${p.category==='footwear'?'selected':''}>Footwear (Shoes, Sneakers)</option>
+                <option value="custom" ${!['tops','bottoms','accessories','outerwear','footwear'].includes(p.category)?'selected':''}>Custom (নিজে লিখুন)</option>
               </select>
+              <input type="text" id="pf-category-custom"
+                style="margin-top:0.4rem;display:${!['tops','bottoms','accessories','outerwear','footwear'].includes(p.category)?'block':'none'}"
+                value="${!['tops','bottoms','accessories','outerwear','footwear'].includes(p.category)?p.category:'"}"
+                placeholder="Custom category লিখুন (e.g. Joggers)">
             </div>
           </div>
           <div class="form-field form-field-full">
@@ -720,10 +733,22 @@ function _readAsBase64(file, status, previewBox, preview) {
   reader.readAsDataURL(file);
 }
 
+function toggleCustomCategory(sel) {
+  const customInput = document.getElementById('pf-category-custom');
+  if (!customInput) return;
+  customInput.style.display = sel.value === 'custom' ? 'block' : 'none';
+  if (sel.value !== 'custom') customInput.value = '';
+}
+
 async function saveProduct(productId) {
   const name  = document.getElementById('pf-name').value.trim();
   const price = parseInt(document.getElementById('pf-price').value);
   if (!name || !price) { toast('Name and price are required', 'error'); return; }
+
+  // Determine category: if 'custom' selected, use the text input value
+  const catSel = document.getElementById('pf-category').value;
+  const catCustom = (document.getElementById('pf-category-custom')?.value || '').trim();
+  const finalCategory = (catSel === 'custom' && catCustom) ? catCustom.toLowerCase() : catSel;
 
   const data = {
     name,
@@ -732,7 +757,7 @@ async function saveProduct(productId) {
     originalPrice: parseInt(document.getElementById('pf-original-price').value) || 0,
     priceUSD: Math.round(price / 110),
     image:    document.getElementById('pf-image').value.trim(),
-    category: document.getElementById('pf-category').value,
+    category: finalCategory,
     tag:      document.getElementById('pf-tag').value,
     sizes:    document.getElementById('pf-sizes').value.split(',').map(s => s.trim()).filter(Boolean),
     stock:    parseInt(document.getElementById('pf-stock').value) || 0,
