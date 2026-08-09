@@ -109,19 +109,44 @@
       <a href="index.html" class="nav-logo">HAZE</a>
       <div class="nav-links">
         <a href="index.html">← Back to Shop</a>
+        <span id="nav-admin-link" style="display:none"><a href="admin.html" style="color:var(--accent)">Admin ⚡</a></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:1rem">
+        <!-- User Auth Button -->
+        <div id="nav-user-area" style="position:relative">
+          <!-- Shown when logged out -->
+          <a href="auth.html" class="nav-auth-btn" id="nav-login-btn"
+            style="font-family:var(--font-label);font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ash);border:1px solid rgba(107,79,160,0.3);padding:0.45rem 1rem;transition:all 0.3s;display:inline-block">
+            Sign In
+          </a>
+          <!-- Shown when logged in -->
+          <div id="nav-user-btn" style="display:none;position:relative">
+            <button onclick="toggleUserMenu()" style="font-family:var(--font-label);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ghost);border:1px solid rgba(107,79,160,0.3);padding:0.45rem 1rem;background:rgba(139,92,246,0.08);display:flex;align-items:center;gap:0.5rem;cursor:pointer">
+              <span>👤</span><span id="nav-user-name">User</span><span style="font-size:0.5rem">▼</span>
+            </button>
+            <div id="user-dropdown" style="display:none;position:absolute;right:0;top:110%;background:var(--haze-purple);border:1px solid rgba(107,79,160,0.2);min-width:160px;z-index:999;padding:0.5rem 0">
+              <div style="padding:0.5rem 1rem;font-size:0.75rem;color:var(--smoke);border-bottom:1px solid rgba(107,79,160,0.1)" id="nav-user-email"></div>
+              <a href="account.html" style="display:block;padding:0.6rem 1rem;font-size:0.8rem;color:var(--ash);transition:background 0.2s" onmouseover="this.style.background='rgba(139,92,246,0.1)'" onmouseout="this.style.background=''">📦 My Orders</a>
+              <div id="nav-admin-menu" style="display:none"><a href="admin.html" style="display:block;padding:0.6rem 1rem;font-size:0.8rem;color:var(--accent);transition:background 0.2s" onmouseover="this.style.background='rgba(139,92,246,0.1)'" onmouseout="this.style.background=''">⚡ Admin Panel</a></div>
+              <div style="border-top:1px solid rgba(107,79,160,0.1);margin-top:0.3rem;padding-top:0.3rem">
+                <button onclick="handleLogout()" style="width:100%;text-align:left;padding:0.6rem 1rem;font-size:0.8rem;color:#f87171;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='rgba(239,68,68,0.05)'" onmouseout="this.style.background=''">🚪 Sign Out</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </nav>
 
   <div class="track-wrapper">
     <div class="container">
-      <div class="track-header">
-        <span class="section-label">Track Your Order</span>
-        <h1>Order Status</h1>
-        <p>Enter your phone number or Order ID to track your order.</p>
+      <div class="track-header" id="page-header">
+        <span class="section-label" id="page-label">Track Your Order</span>
+        <h1 id="page-title">Order Status</h1>
+        <p id="page-desc">Enter your phone number or Order ID to track your order.</p>
       </div>
 
-      <div class="track-search">
+      <div class="track-search" id="track-search-box">
         <label>Phone Number or Order ID</label>
         <div class="track-input-row">
           <input type="text" id="track-input" placeholder="01XXXXXXXXX or HZ-XXXXXX">
@@ -142,6 +167,22 @@
   <script>
     const STATUS_STEPS = ['pending','processing','shipped','delivered'];
     const STATUS_LABELS = { pending:'Ordered', processing:'Processing', shipped:'Shipped', delivered:'Delivered', cancelled:'Cancelled' };
+
+    // ── USER AUTH NAV ────────────────────────────────────
+    function toggleUserMenu() {
+      const dd = document.getElementById('user-dropdown');
+      dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+    }
+    document.addEventListener('click', (e) => {
+      if (!document.getElementById('nav-user-area').contains(e.target)) {
+        const dd = document.getElementById('user-dropdown');
+        if (dd) dd.style.display = 'none';
+      }
+    });
+    function handleLogout() {
+      HazeDB.logoutUser();
+      window.location.reload();
+    }
 
     function statusBadge(status) {
       return `<span class="status-badge status-${status}">${STATUS_LABELS[status] || status}</span>`;
@@ -225,12 +266,51 @@
       if (e.key === 'Enter') document.getElementById('track-btn').click();
     });
 
-    // If ?order= in URL, auto-search
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('order')) {
-      document.getElementById('track-input').value = params.get('order');
-      document.getElementById('track-btn').click();
-    }
+    // INIT PAGE
+    (function initAccountPage() {
+      const user = HazeDB.getCurrentUser();
+      
+      // Init Nav
+      if (user) {
+        document.getElementById('nav-login-btn').style.display = 'none';
+        document.getElementById('nav-user-btn').style.display = 'block';
+        document.getElementById('nav-user-name').textContent = user.name.split(' ')[0];
+        document.getElementById('nav-user-email').textContent = user.email;
+        if (HazeDB.isCurrentUserAdmin()) {
+          document.getElementById('nav-admin-menu').style.display = 'block';
+          document.getElementById('nav-admin-link').style.display = 'inline';
+        }
+      }
+
+      // Check URL params first
+      const params = new URLSearchParams(window.location.search);
+      const searchOrder = params.get('order');
+
+      if (user) {
+        // User logged in view
+        document.getElementById('page-label').textContent = 'Dashboard';
+        document.getElementById('page-title').textContent = 'My Orders';
+        document.getElementById('page-desc').textContent = `Welcome back, ${user.name}. Here are your recent orders.`;
+        document.getElementById('track-search-box').style.display = 'none';
+        
+        const orders = HazeDB.getOrdersByEmail(user.email);
+        
+        if (searchOrder) {
+          // highlight specific order?
+          document.getElementById('track-search-box').style.display = 'block';
+          document.getElementById('track-input').value = searchOrder;
+          document.getElementById('track-btn').click();
+        } else {
+          renderOrders(orders);
+        }
+      } else {
+        // Guest view
+        if (searchOrder) {
+          document.getElementById('track-input').value = searchOrder;
+          document.getElementById('track-btn').click();
+        }
+      }
+    })();
   </script>
 </body>
 </html>
