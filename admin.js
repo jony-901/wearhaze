@@ -76,18 +76,31 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 async function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('admin-app').style.display = 'block';
-  const settings = await HazeDB.getSettings();
-  document.getElementById('sidebar-store-info').textContent = (settings.storeName || 'HAZE') + '\n' + (settings.email || '');
-  await updatePendingBadge();
-  navigateTo('dashboard');
+
+  try {
+    const settings = await HazeDB.getSettings();
+    if (settings) {
+      document.getElementById('sidebar-store-info').textContent = (settings.storeName || 'HAZE') + '\n' + (settings.email || '');
+    }
+  } catch(e) { console.error('Settings init error:', e); }
+
+  try {
+    await updatePendingBadge();
+  } catch(e) { console.error('Badge init error:', e); }
+
+  await navigateTo('dashboard');
 }
 
 async function updatePendingBadge() {
-  const orders = await HazeDB.getOrders();
-  const pending = orders.filter(o => o.status === 'pending').length;
-  const badge = document.getElementById('sidebar-pending-count');
-  badge.textContent = pending;
-  badge.style.display = pending > 0 ? 'inline' : 'none';
+  try {
+    const orders = (await HazeDB.getOrders()) || [];
+    const pending = orders.filter(o => o.status === 'pending').length;
+    const badge = document.getElementById('sidebar-pending-count');
+    if (badge) {
+      badge.textContent = pending;
+      badge.style.display = pending > 0 ? 'inline' : 'none';
+    }
+  } catch(e) { console.error('Pending badge error:', e); }
 }
 
 /* ── NAVIGATION ───────────────────────────────────────── */
@@ -106,11 +119,23 @@ async function navigateTo(page) {
   const content = document.getElementById('admin-content');
   content.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--ash)">Loading...</div>';
 
-  if (page === 'dashboard') await renderDashboard();
-  else if (page === 'orders') await renderOrders();
-  else if (page === 'products') await renderProducts();
-  else if (page === 'coupons') await renderCoupons();
-  else if (page === 'settings') await renderSettings();
+  try {
+    if (page === 'dashboard') await renderDashboard();
+    else if (page === 'orders') await renderOrders();
+    else if (page === 'products') await renderProducts();
+    else if (page === 'coupons') await renderCoupons();
+    else if (page === 'settings') await renderSettings();
+  } catch (err) {
+    console.error('Page render error:', err);
+    content.innerHTML = `
+      <div style="padding:3rem 1.5rem;text-align:center">
+        <div style="font-size:2.5rem;margin-bottom:0.5rem">⚠️</div>
+        <div style="font-size:1.1rem;color:var(--ghost);font-weight:700">Error Loading ${page}</div>
+        <div style="font-size:0.85rem;color:var(--smoke);margin-top:0.4rem;max-width:480px;margin-left:auto;margin-right:auto">${err.message || 'Database error'}</div>
+        <button class="btn btn-primary" onclick="navigateTo('${page}')" style="margin-top:1.2rem">Retry Loading</button>
+      </div>
+    `;
+  }
 }
 
 /* ══════════════════════════════════════════════════════

@@ -217,9 +217,14 @@ const HazeDB = (() => {
 
   // ── ANALYTICS ────────────────────────────────────────
   async function getAnalytics() {
-    const orders = await getOrders();
-    const products = await getProducts();
-    const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
+    let orders = [];
+    let products = [];
+    try { orders = (await getOrders()) || []; } catch(e){}
+    try { products = (await getProducts()) || []; } catch(e){}
+    if (!Array.isArray(orders)) orders = [];
+    if (!Array.isArray(products)) products = [];
+
+    const totalRevenue = orders.reduce((s, o) => s + (o.total || 0), 0);
     const totalOrders = orders.length;
     const pendingOrders = orders.filter(o => o.status === 'pending').length;
     const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
@@ -230,17 +235,19 @@ const HazeDB = (() => {
       const dayStr = date.toLocaleDateString('en-US', { weekday: 'short' });
       const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
       const dayEnd = dayStart + 86400000;
-      const dayRevenue = orders.filter(o => o.createdAt >= dayStart && o.createdAt < dayEnd).reduce((s, o) => s + o.total, 0);
+      const dayRevenue = orders.filter(o => o.createdAt >= dayStart && o.createdAt < dayEnd).reduce((s, o) => s + (o.total || 0), 0);
       revenueByDay.push({ day: dayStr, revenue: dayRevenue });
     }
 
     const productSales = {};
     orders.forEach(o => {
-      o.items.forEach(item => {
-        if (!productSales[item.productId]) productSales[item.productId] = { name: item.name, qty: 0, revenue: 0 };
-        productSales[item.productId].qty += item.qty;
-        productSales[item.productId].revenue += item.price * item.qty;
-      });
+      if (Array.isArray(o.items)) {
+        o.items.forEach(item => {
+          if (!productSales[item.productId]) productSales[item.productId] = { name: item.name, qty: 0, revenue: 0 };
+          productSales[item.productId].qty += (item.qty || 0);
+          productSales[item.productId].revenue += (item.price || 0) * (item.qty || 0);
+        });
+      }
     });
     const topProducts = Object.values(productSales).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
     const statusCounts = { pending: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0 };
@@ -249,7 +256,7 @@ const HazeDB = (() => {
     return {
       totalRevenue, totalOrders, pendingOrders, deliveredOrders,
       totalProducts: products.length,
-      totalStock: products.reduce((s, p) => s + p.stock, 0),
+      totalStock: products.reduce((s, p) => s + (p.stock || 0), 0),
       revenueByDay, topProducts, statusCounts,
       recentOrders: orders.slice(0, 10)
     };
