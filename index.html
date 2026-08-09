@@ -453,11 +453,15 @@
           grid.innerHTML = dbProducts.map((p, idx) => {
             const sizes = Array.isArray(p.sizes) ? p.sizes : (p.sizes || '').split(',').map(s => s.trim()).filter(Boolean);
             const usd = p.priceUSD ? `~$${p.priceUSD}` : `~$${Math.round(p.price / 110)}`;
+            const origPriceHtml = (p.originalPrice && p.originalPrice > p.price)
+              ? `<span style="text-decoration:line-through;color:var(--smoke);font-size:0.85em;margin-left:0.4rem">৳ ${p.originalPrice.toLocaleString()}</span>`
+              : '';
+            const tagText = p.tag || (p.originalPrice && p.originalPrice > p.price ? 'Sale' : '');
             return `
               <div class="product-card reveal" data-product-id="${p.id}">
                 <div class="product-image">
                   <img src="${p.image || 'images/product-tee.png'}" alt="${p.name}" loading="lazy">
-                  ${p.tag ? `<span class="product-tag">${p.tag}</span>` : ''}
+                  ${tagText ? `<span class="product-tag">${tagText}</span>` : ''}
                   <div class="product-card-actions">
                     <button class="quick-view-btn" onclick="openQuickView('${p.id}')">Quick View</button>
                     <a href="product.html?id=${p.id}" class="view-detail-btn">View Details</a>
@@ -466,7 +470,7 @@
                 <div class="product-info">
                   <h3 class="product-name"><a href="product.html?id=${p.id}" style="color:inherit;text-decoration:none">${p.name}</a></h3>
                   <p class="product-desc">${p.description || ''}</p>
-                  <div class="product-price">৳ ${p.price.toLocaleString()} <span class="usd">${usd}</span></div>
+                  <div class="product-price">৳ ${p.price.toLocaleString()} ${origPriceHtml} <span class="usd">${usd}</span></div>
                   <div class="size-selector" data-product="${p.id}">
                     ${sizes.map((s, i) => `<span class="size-btn ${i === 0 ? 'selected' : ''}" data-size="${s}" onclick="selectSizeBtn(this)">${s}</span>`).join('')}
                   </div>

@@ -370,6 +370,7 @@
 
             <div class="product-detail-price">
               ৳ ${product.price.toLocaleString()}
+              ${(product.originalPrice && product.originalPrice > product.price) ? `<span style="text-decoration:line-through;color:var(--smoke);font-size:0.7em;margin-left:0.5rem">৳ ${product.originalPrice.toLocaleString()}</span>` : ''}
               ${product.priceUSD ? `<span class="usd">~$${product.priceUSD}</span>` : ''}
             </div>
 

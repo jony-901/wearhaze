@@ -515,15 +515,15 @@ ul { list-style: none; }
 
 /* ── QUICK VIEW MODAL ───────────────────────────────── */
 .quick-view-modal {
-  position: fixed; inset: 0; z-index: 1000;
-  background: rgba(0,0,0,0.8);
-  display: flex; align-items: center; justify-content: center;
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0,0,0,0.85);
+  display: none; align-items: center; justify-content: center;
   opacity: 0; visibility: hidden;
-  transition: all 0.4s var(--transition);
+  transition: opacity 0.3s ease, visibility 0.3s ease;
   backdrop-filter: blur(8px);
   padding: 2rem;
 }
-.quick-view-modal.active { opacity: 1; visibility: visible; }
+.quick-view-modal.active { display: flex; opacity: 1; visibility: visible; }
 .qv-content {
   background: var(--haze-purple);
   width: 100%; max-width: 900px;

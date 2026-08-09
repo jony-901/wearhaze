@@ -461,17 +461,16 @@ async function renderProducts() {
 }
 
 async function showProductModal(productId = null) {
-  const product = productId ? await HazeDB.getProduct(productId) : null;
-  const isEdit = !!product;
-  const p = product || { id:'', name:'', description:'', price:'', priceUSD:'', image:'', category:'tops', tag:'', sizes:'S,M,L,XL', stock:'', featured:false };
+  const p = productId ? await HazeDB.getProduct(productId) : { name:'', description:'', price:'', originalPrice:'', priceUSD:'', image:'', category:'tops', tag:'', sizes:['S','M','L','XL'], stock:50, featured:false };
+  const isEdit = !!productId;
 
   const overlay = document.createElement('div');
   overlay.className = 'admin-modal-overlay';
   overlay.innerHTML = `
-    <div class="admin-modal">
+    <div class="admin-modal" style="max-width:640px">
       <div class="admin-modal-header">
-        <div class="admin-modal-title">${isEdit ? 'Edit Product' : 'Add Product'}</div>
-        <div class="admin-modal-close" onclick="this.closest('.admin-modal-overlay').remove()">✕</div>
+        <div class="admin-modal-title">${isEdit ? 'Edit Product' : 'Add New Product'}</div>
+        <button class="modal-close" onclick="this.closest('.admin-modal-overlay').remove()">✕</button>
       </div>
       <div class="admin-modal-body">
         <div class="admin-form">
@@ -481,74 +480,65 @@ async function showProductModal(productId = null) {
               <input type="text" id="pf-name" value="${p.name}" placeholder="e.g. Oversized Tee">
             </div>
             <div class="form-field">
-              <label>Category *</label>
+              <label>Category</label>
               <select id="pf-category">
-                <option value="tops" ${p.category==='tops'?'selected':''}>Tops</option>
-                <option value="bottoms" ${p.category==='bottoms'?'selected':''}>Bottoms</option>
-                <option value="accessories" ${p.category==='accessories'?'selected':''}>Accessories</option>
-                <option value="outerwear" ${p.category==='outerwear'?'selected':''}>Outerwear</option>
+                <option value="tops" ${p.category==='tops'?'selected':''}>Tops (Tees, Hoodies)</option>
+                <option value="bottoms" ${p.category==='bottoms'?'selected':''}>Bottoms (Pants, Cargo)</option>
+                <option value="accessories" ${p.category==='accessories'?'selected':''}>Accessories (Caps, Bags)</option>
               </select>
             </div>
           </div>
           <div class="form-field form-field-full">
             <label>Description</label>
-            <textarea id="pf-desc" rows="2">${p.description}</textarea>
+            <textarea id="pf-desc" rows="2">${p.description || ''}</textarea>
           </div>
           <div class="admin-form-row">
             <div class="form-field">
-              <label>Price (৳) *</label>
+              <label>Selling Price (৳) * — বিক্রি মূল্য</label>
               <input type="number" id="pf-price" value="${p.price}" placeholder="850">
             </div>
             <div class="form-field">
-              <label>Price (USD)</label>
-              <input type="number" id="pf-usd" value="${p.priceUSD}" placeholder="8">
+              <label>Original / Regular Price (৳) — পূর্বের মূল্য (ছাড়ের জন্য)</label>
+              <input type="number" id="pf-original-price" value="${p.originalPrice || ''}" placeholder="e.g. 1200 (ছাড় দেখাতে)">
             </div>
           </div>
           <div class="admin-form-row">
             <div class="form-field">
-              <label>Stock</label>
+              <label>Stock Quantity</label>
               <input type="number" id="pf-stock" value="${p.stock}" placeholder="50">
             </div>
             <div class="form-field">
-              <label>Tag</label>
+              <label>Tag / Badge</label>
               <select id="pf-tag">
                 <option value="" ${!p.tag?'selected':''}>None</option>
                 <option value="New" ${p.tag==='New'?'selected':''}>New</option>
                 <option value="Popular" ${p.tag==='Popular'?'selected':''}>Popular</option>
                 <option value="Limited" ${p.tag==='Limited'?'selected':''}>Limited</option>
+                <option value="Sale" ${p.tag==='Sale'?'selected':''}>Sale</option>
               </select>
             </div>
           </div>
-          <div class="form-field form-field-full">
-            <label>Product Image — ছবি Upload করুন</label>
 
-            <div class="img-upload-area" id="img-upload-area"
-              onclick="document.getElementById('pf-image-file').click()"
-              ondragover="event.preventDefault();this.classList.add('drag-over')"
-              ondragleave="this.classList.remove('drag-over')"
-              ondrop="handleImgDrop(event)">
+          <!-- PHOTO UPLOAD SECTION -->
+          <div class="form-field form-field-full" style="background:rgba(139,92,246,0.05);padding:1rem;border:1px solid rgba(139,92,246,0.2);border-radius:6px">
+            <label style="font-weight:700;color:var(--ghost)">📸 Product Photo — ছবি আপলোড</label>
+            <p style="font-size:0.75rem;color:var(--ash);margin-top:0.2rem;margin-bottom:0.8rem">গ্যালারি বা কম্পিউটার থেকে ছবি সিলেক্ট করুন:</p>
 
-              <div id="img-upload-placeholder" style="text-align:center;pointer-events:none;${p.image ? 'display:none' : ''}">
-                <div style="font-size:2.5rem;margin-bottom:0.6rem">📷</div>
-                <div style="font-size:0.9rem;color:var(--ghost);font-weight:600">Click করুন বা Drag করুন</div>
-                <div style="font-size:0.72rem;color:var(--smoke);margin-top:0.3rem">JPG · PNG · WebP — সর্বোচ্চ 5MB</div>
-              </div>
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('pf-image-file').click()" style="width:100%;padding:0.8rem;font-weight:600;letter-spacing:0.1em">
+              📁 Choose Photo File from Device
+            </button>
+            <input type="file" id="pf-image-file" accept="image/jpeg,image/png,image/webp,image/gif,image/jpg" style="display:none" onchange="uploadProductImage(this)">
 
-              <img id="img-preview" src="${p.image || ''}"
-                style="display:${p.image ? 'block' : 'none'};max-height:200px;max-width:100%;object-fit:contain;margin:0 auto;pointer-events:none">
+            <div id="img-upload-status" style="font-size:0.8rem;margin-top:0.6rem;min-height:1.2em;font-weight:600"></div>
+
+            <div id="img-preview-box" style="margin-top:0.8rem;text-align:center;${p.image ? '' : 'display:none'}">
+              <img id="img-preview" src="${p.image || ''}" style="max-height:160px;max-width:100%;object-fit:contain;border:1px solid rgba(139,92,246,0.3);border-radius:4px">
             </div>
 
-            <input type="file" id="pf-image-file" accept="image/jpeg,image/png,image/webp,image/gif"
-              style="display:none" onchange="uploadProductImage(this)">
-            <div id="img-upload-status" style="font-size:0.78rem;margin-top:0.5rem;min-height:1.2em"></div>
-
-            <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.8rem;margin-bottom:0.4rem">
-              <div style="flex:1;height:1px;background:rgba(107,79,160,0.15)"></div>
-              <span style="font-size:0.65rem;color:var(--smoke);letter-spacing:0.1em;text-transform:uppercase">অথবা URL দিন</span>
-              <div style="flex:1;height:1px;background:rgba(107,79,160,0.15)"></div>
-            </div>
-            <input type="text" id="pf-image" value="${p.image || ''}" placeholder="https://... অথবা images/product.png">
+            <div style="margin-top:1rem;font-size:0.75rem;color:var(--smoke)">অথবা ছবির Link paste করুন:</div>
+            <input type="text" id="pf-image" value="${p.image || ''}" placeholder="https://... অথবা uploads/products/..." style="margin-top:0.3rem">
           </div>
+
           <div class="form-field form-field-full">
             <label>Available Sizes (comma separated)</label>
             <input type="text" id="pf-sizes" value="${Array.isArray(p.sizes) ? p.sizes.join(',') : p.sizes}" placeholder="S,M,L,XL or One Size">
@@ -573,15 +563,13 @@ async function showProductModal(productId = null) {
 
   // Image URL input preview
   document.getElementById('pf-image').addEventListener('input', e => {
+    const previewBox = document.getElementById('img-preview-box');
     const preview = document.getElementById('img-preview');
-    const placeholder = document.getElementById('img-upload-placeholder');
     if (e.target.value) {
       preview.src = e.target.value;
-      preview.style.display = 'block';
-      if (placeholder) placeholder.style.display = 'none';
+      previewBox.style.display = 'block';
     } else {
-      preview.style.display = 'none';
-      if (placeholder) placeholder.style.display = 'block';
+      previewBox.style.display = 'none';
     }
   });
 
@@ -596,16 +584,15 @@ async function uploadProductImage(input) {
 
 function handleImgDrop(event) {
   event.preventDefault();
-  document.getElementById('img-upload-area').classList.remove('drag-over');
   const file = event.dataTransfer.files[0];
   if (file && file.type.startsWith('image/')) _doImageUpload(file);
 }
 
 async function _doImageUpload(file) {
   const status = document.getElementById('img-upload-status');
+  const previewBox = document.getElementById('img-preview-box');
   const preview = document.getElementById('img-preview');
-  const placeholder = document.getElementById('img-upload-placeholder');
-  status.textContent = '⏳ Uploading...';
+  status.textContent = '⏳ Uploading photo...';
   status.style.color = 'var(--accent)';
 
   const formData = new FormData();
@@ -617,17 +604,34 @@ async function _doImageUpload(file) {
     if (data.ok) {
       document.getElementById('pf-image').value = data.url;
       preview.src = data.url;
-      preview.style.display = 'block';
-      if (placeholder) placeholder.style.display = 'none';
-      status.textContent = '✓ Image uploaded!';
-      status.style.color = 'var(--success)';
+      if (previewBox) previewBox.style.display = 'block';
+      status.textContent = '✓ Photo uploaded successfully!';
+      status.style.color = '#4ade80';
     } else {
-      status.textContent = '✕ ' + (data.error || 'Upload failed');
-      status.style.color = 'var(--danger)';
+      // Fallback: convert file to Base64 Data URL if server upload directory fails
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const dataUrl = e.target.result;
+        document.getElementById('pf-image').value = dataUrl;
+        preview.src = dataUrl;
+        if (previewBox) previewBox.style.display = 'block';
+        status.textContent = '✓ Photo loaded!';
+        status.style.color = '#4ade80';
+      };
+      reader.readAsDataURL(file);
     }
   } catch (e) {
-    status.textContent = '✕ Upload error';
-    status.style.color = 'var(--danger)';
+    // Base64 Fallback on network error
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const dataUrl = evt.target.result;
+      document.getElementById('pf-image').value = dataUrl;
+      preview.src = dataUrl;
+      if (previewBox) previewBox.style.display = 'block';
+      status.textContent = '✓ Photo loaded!';
+      status.style.color = '#4ade80';
+    };
+    reader.readAsDataURL(file);
   }
 }
 
@@ -640,7 +644,8 @@ async function saveProduct(productId) {
     name,
     description: document.getElementById('pf-desc').value.trim(),
     price,
-    priceUSD: parseInt(document.getElementById('pf-usd').value) || 0,
+    originalPrice: parseInt(document.getElementById('pf-original-price').value) || 0,
+    priceUSD: parseInt(document.getElementById('pf-usd')?.value || 0) || Math.round(price / 110),
     image: document.getElementById('pf-image').value.trim(),
     category: document.getElementById('pf-category').value,
     tag: document.getElementById('pf-tag').value,
@@ -651,10 +656,10 @@ async function saveProduct(productId) {
 
   if (productId) {
     await HazeDB.updateProduct(productId, data);
-    toast('Product updated!');
+    toast('✓ Product updated!');
   } else {
     await HazeDB.addProduct({ ...data, id: 'haze-' + Date.now() });
-    toast('Product added!');
+    toast('✓ Product added!');
   }
   document.querySelector('.admin-modal-overlay').remove();
   await renderProducts();
@@ -705,12 +710,12 @@ async function renderSettings() {
 
       <!-- Social Links -->
       <div class="panel">
-        <div class="panel-header"><div class="panel-title">Social Media</div></div>
+        <div class="panel-header"><div class="panel-title">Social Media Links</div></div>
         <div class="panel-body">
           <div class="admin-form">
-            <div class="form-field"><label>Instagram URL</label><input type="url" id="s-ig" value="${s.instagram || ''}"></div>
-            <div class="form-field"><label>Facebook URL</label><input type="url" id="s-fb" value="${s.facebook || ''}"></div>
-            <div class="form-field"><label>TikTok URL</label><input type="url" id="s-tt" value="${s.tiktok || ''}"></div>
+            <div class="form-field"><label>Instagram URL</label><input type="url" id="s-ig" value="${s.instagram || ''}" placeholder="https://instagram.com/yourhandle"></div>
+            <div class="form-field"><label>Facebook URL</label><input type="url" id="s-fb" value="${s.facebook || ''}" placeholder="https://facebook.com/yourpage"></div>
+            <div class="form-field"><label>TikTok URL</label><input type="url" id="s-tt" value="${s.tiktok || ''}" placeholder="https://tiktok.com/@yourhandle"></div>
             <button class="btn btn-primary" onclick="saveSocialSettings()">Save Social Links</button>
           </div>
         </div>
@@ -764,13 +769,50 @@ async function renderCoupons() {
   const coupons = await HazeDB.getCoupons() || [];
 
   content.innerHTML = `
-    <div class="section-header" style="margin-bottom:1.5rem">
-      <div>
-        <div class="section-title">Coupon Codes</div>
-        <div class="section-sub">${coupons.length} coupon${coupons.length!==1?'s':''} total</div>
+    <!-- INLINE CREATE COUPON FORM -->
+    <div class="panel" style="margin-bottom:2rem;border:1px solid rgba(139,92,246,0.3)">
+      <div class="panel-header" style="background:rgba(139,92,246,0.1)">
+        <div class="panel-title">➕ Create New Coupon Code (নতুন কুপন বানান)</div>
       </div>
-      <button class="btn btn-primary" onclick="showCouponModal()">+ New Coupon</button>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:1rem;align-items:end">
+          <div>
+            <label style="font-size:0.75rem;color:var(--smoke);display:block;margin-bottom:0.3rem">Coupon Code *</label>
+            <input type="text" id="inline-cp-code" placeholder="e.g. HAZE20"
+              style="text-transform:uppercase;font-family:monospace;letter-spacing:0.1em;padding:0.65rem;width:100%;background:rgba(107,79,160,0.08);border:1px solid rgba(107,79,160,0.25);color:var(--ghost);outline:none"
+              oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+          </div>
+          <div>
+            <label style="font-size:0.75rem;color:var(--smoke);display:block;margin-bottom:0.3rem">Discount Type *</label>
+            <select id="inline-cp-type" style="padding:0.65rem;width:100%;background:rgba(107,79,160,0.08);border:1px solid rgba(107,79,160,0.25);color:var(--ghost);outline:none">
+              <option value="percentage">Percentage (%) ছাড়</option>
+              <option value="fixed">Fixed Amount (৳) ছাড়</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.75rem;color:var(--smoke);display:block;margin-bottom:0.3rem">Discount Amount *</label>
+            <input type="number" id="inline-cp-value" placeholder="e.g. 20 (মানে 20%)" style="padding:0.65rem;width:100%;background:rgba(107,79,160,0.08);border:1px solid rgba(107,79,160,0.25);color:var(--ghost);outline:none">
+          </div>
+          <div>
+            <label style="font-size:0.75rem;color:var(--smoke);display:block;margin-bottom:0.3rem">Min Order ৳ (0 = limit নাই)</label>
+            <input type="number" id="inline-cp-min" value="0" style="padding:0.65rem;width:100%;background:rgba(107,79,160,0.08);border:1px solid rgba(107,79,160,0.25);color:var(--ghost);outline:none">
+          </div>
+          <div>
+            <button type="button" class="btn btn-primary" id="inline-cp-btn" onclick="createInlineCoupon()" style="width:100%;padding:0.7rem;font-weight:700">
+              ✓ Save Coupon
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <div class="section-header" style="margin-bottom:1rem">
+      <div>
+        <div class="section-title">All Coupon Codes</div>
+        <div class="section-sub">${coupons.length} coupon${coupons.length!==1?'s':''} active</div>
+      </div>
+    </div>
+
     <div class="data-table-wrap">
       <table class="data-table">
         <thead><tr>
@@ -779,12 +821,12 @@ async function renderCoupons() {
         </tr></thead>
         <tbody>
           ${coupons.length === 0
-            ? `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--smoke)">No coupons yet. Create your first one!</td></tr>`
+            ? `<tr><td colspan="6" style="text-align:center;padding:2.5rem;color:var(--smoke)">No coupons yet. Fill the form above to create your first coupon!</td></tr>`
             : coupons.map(c => `
               <tr>
-                <td><code style="background:rgba(139,92,246,0.12);padding:0.25rem 0.7rem;border-radius:4px;font-size:0.85rem;letter-spacing:0.1em">${c.code}</code></td>
-                <td>${c.discount_type==='percentage' ? c.discount_value+'%' : '৳'+(+c.discount_value).toLocaleString()}</td>
-                <td>${+c.min_order>0 ? '৳'+(+c.min_order).toLocaleString() : '—'}</td>
+                <td><code style="background:rgba(139,92,246,0.15);color:var(--accent);padding:0.3rem 0.8rem;border-radius:4px;font-size:0.9rem;letter-spacing:0.1em;font-weight:700">${c.code}</code></td>
+                <td><strong style="color:#4ade80">${c.discount_type==='percentage' ? c.discount_value+'%' : '৳'+(+c.discount_value).toLocaleString()} OFF</strong></td>
+                <td>${+c.min_order>0 ? '৳'+(+c.min_order).toLocaleString() : 'No Limit'}</td>
                 <td>${c.used_count} / ${+c.max_uses>0 ? c.max_uses : '∞'}</td>
                 <td><span class="order-status-badge ${c.is_active ? 'status-processing' : 'status-cancelled'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
                 <td>
@@ -798,55 +840,6 @@ async function renderCoupons() {
   `;
 }
 
-function showCouponModal() {
-  const overlay = document.createElement('div');
-  overlay.className = 'admin-modal-overlay';
-  overlay.innerHTML = `
-    <div class="admin-modal" style="max-width:480px">
-      <div class="admin-modal-header">
-        <div class="admin-modal-title">🏷️ New Coupon Code</div>
-        <button class="modal-close" onclick="this.closest('.admin-modal-overlay').remove()">✕</button>
-      </div>
-      <div class="admin-modal-body">
-        <div class="form-field">
-          <label>Coupon Code (e.g. HAZE20)</label>
-          <input type="text" id="cp-code" placeholder="HAZE20"
-            oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
-            style="font-family:monospace;letter-spacing:0.15em;font-size:1rem">
-        </div>
-        <div class="admin-form-row">
-          <div class="form-field">
-            <label>Discount Type</label>
-            <select id="cp-type">
-              <option value="percentage">Percentage (%) বাদ দেবে</option>
-              <option value="fixed">Fixed Amount (৳) বাদ দেবে</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label>Discount Value</label>
-            <input type="number" id="cp-value" placeholder="e.g. 10 বা 200" min="1">
-          </div>
-        </div>
-        <div class="admin-form-row">
-          <div class="form-field">
-            <label>Minimum Order ৳ (0 = কোনো limit নেই)</label>
-            <input type="number" id="cp-min" value="0" min="0">
-          </div>
-          <div class="form-field">
-            <label>Max Uses (0 = unlimited)</label>
-            <input type="number" id="cp-max" value="0" min="0">
-          </div>
-        </div>
-      </div>
-      <div class="admin-modal-footer">
-        <button class="btn btn-secondary" onclick="this.closest('.admin-modal-overlay').remove()">Cancel</button>
-        <button class="btn btn-primary" id="cp-submit-btn" onclick="createCoupon()">✓ Create Coupon</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-  setTimeout(() => document.getElementById('cp-code').focus(), 100);
 }
 
 async function createCoupon() {

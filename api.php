@@ -92,6 +92,7 @@ if ($action === 'setup') {
             name VARCHAR(200) NOT NULL,
             description TEXT,
             price INT NOT NULL DEFAULT 0,
+            original_price INT DEFAULT 0,
             price_usd INT DEFAULT 0,
             image VARCHAR(500),
             category VARCHAR(50) DEFAULT 'tops',
@@ -143,9 +144,10 @@ if ($action === 'setup') {
     ];
     foreach ($sqls as $sql) $pdo->exec($sql);
 
-    // Add discount columns if upgrading
+    // Add columns if upgrading
     try { $pdo->exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount INT DEFAULT 0"); } catch(Exception $e){}
     try { $pdo->exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_code VARCHAR(50) DEFAULT ''"); } catch(Exception $e){}
+    try { $pdo->exec("ALTER TABLE products ADD COLUMN IF NOT EXISTS original_price INT DEFAULT 0"); } catch(Exception $e){}
 
     echo json_encode(['ok' => true, 'message' => 'All tables created/updated!']);
     exit();
@@ -159,21 +161,23 @@ try {
     case 'get_products':
         $rows = $pdo->query("SELECT * FROM products ORDER BY created_at DESC")->fetchAll();
         foreach ($rows as &$p) {
-            $p['sizes']    = json_decode($p['sizes'], true) ?: [];
-            $p['featured'] = (bool)$p['featured'];
-            $p['price']    = (int)$p['price'];
-            $p['stock']    = (int)$p['stock'];
+            $p['sizes']         = json_decode($p['sizes'], true) ?: [];
+            $p['featured']      = (bool)$p['featured'];
+            $p['price']         = (int)$p['price'];
+            $p['originalPrice'] = (int)($p['original_price'] ?? 0);
+            $p['stock']         = (int)$p['stock'];
         }
         echo json_encode($rows);
         break;
 
     case 'add_product':
         $stmt = $pdo->prepare("INSERT INTO products
-            (id,name,description,price,price_usd,image,category,tag,sizes,stock,featured,created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
+            (id,name,description,price,original_price,price_usd,image,category,tag,sizes,stock,featured,created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)");
         $stmt->execute([
             $inputData['id'], $inputData['name'], $inputData['description'] ?? '',
-            (int)$inputData['price'], (int)($inputData['priceUSD'] ?? 0),
+            (int)$inputData['price'], (int)($inputData['originalPrice'] ?? 0),
+            (int)($inputData['priceUSD'] ?? 0),
             $inputData['image'] ?? '', $inputData['category'] ?? 'tops',
             $inputData['tag'] ?? '', json_encode($inputData['sizes'] ?? []),
             (int)($inputData['stock'] ?? 0), $inputData['featured'] ? 1 : 0,
@@ -185,7 +189,8 @@ try {
     case 'update_product':
         $id = $inputData['id'];
         $map = ['name'=>'name','description'=>'description','price'=>'price',
-                'priceUSD'=>'price_usd','image'=>'image','category'=>'category',
+                'originalPrice'=>'original_price','priceUSD'=>'price_usd',
+                'image'=>'image','category'=>'category',
                 'tag'=>'tag','stock'=>'stock','featured'=>'featured'];
         $sets = []; $params = [];
         foreach ($map as $jsKey => $col) {
