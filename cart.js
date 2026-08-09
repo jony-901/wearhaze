@@ -59,7 +59,28 @@ const HazeCart = (() => {
   /* ── ADD TO CART ────────────────────────────────────── */
   async function add(productId, size) {
     if (!size) { showSizeAlert(); return; }
-    HazeDB.addToCart(productId, size, 1);
+    // Fetch product info from DB to store with cart item
+    let productInfo = null;
+    try {
+      const p = await HazeDB.getProduct(productId);
+      if (p) productInfo = { name: p.name, price: p.price, image: p.image };
+    } catch(e) {}
+    // Also try reading from the product card DOM as fallback
+    if (!productInfo) {
+      const card = document.querySelector(`.product-card[data-product-id="${productId}"]`);
+      if (card) {
+        const nameEl  = card.querySelector('.product-name');
+        const imgEl   = card.querySelector('.product-image img');
+        const priceEl = card.querySelector('.product-price');
+        const priceText = priceEl ? priceEl.textContent.replace(/[^\d]/g, '') : '0';
+        productInfo = {
+          name:  nameEl  ? nameEl.textContent.trim()  : productId,
+          image: imgEl   ? imgEl.src                  : 'images/product-tee.png',
+          price: parseInt(priceText) || 0
+        };
+      }
+    }
+    HazeDB.addToCart(productId, size, 1, productInfo);
     await renderDrawer();
     openDrawer();
     showAddedToast();

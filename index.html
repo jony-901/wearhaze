@@ -10,7 +10,7 @@
   <meta property="og:description" content="Premium Gen-Z streetwear. Where fashion meets feeling.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://wearhaze.com">
-  <link rel="stylesheet" href="style.css?v=7.0">
+  <link rel="stylesheet" href="style.css?v=8.0">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='85' font-size='80'>🌫</text></svg>">
 </head>
 <body>
@@ -147,7 +147,7 @@
           <p class="about-highlight reveal reveal-delay-4">Just vibes.<br>Just HAZE.</p>
         </div>
         <div class="about-image reveal reveal-delay-2">
-          <img src="images/product-tee.png" alt="HAZE Oversized Tee">
+          <img src="images/product-tee.png" alt="HAZE Oversized Tee" id="about-section-img">
         </div>
       </div>
     </div>
@@ -188,7 +188,7 @@
           <div class="product-info">
             <h3 class="product-name"><a href="product.html?id=haze-tee-001" style="color:inherit;text-decoration:none">Oversized Tee</a></h3>
             <p class="product-desc">100% Cotton · Dropped Shoulder</p>
-            <div class="product-price">৳ 850 <span class="usd">~$8</span></div>
+            <div class="product-price">৳ 850</div>
             <div class="size-selector" data-product="haze-tee-001">
               <span class="size-btn" data-size="S">S</span>
               <span class="size-btn" data-size="M">M</span>
@@ -417,9 +417,9 @@
     </div>
   </div>
 
-  <script src="data.js?v=7.0"></script>
-  <script src="cart.js?v=7.0"></script>
-  <script src="script.js?v=7.0"></script>
+  <script src="data.js?v=8.0"></script>
+  <script src="cart.js?v=8.0"></script>
+  <script src="script.js?v=8.0"></script>
   <script>
     // ── USER AUTH & SETTINGS NAV ─────────────────────────
     (async function initPageData() {
@@ -435,13 +435,23 @@
         }
       }
 
-      // Load Settings for Social Media Links
+      // Load Settings for Social Media Links + About Image
       try {
         const settings = await HazeDB.getSettings();
         if (settings) {
           if (settings.instagram) document.getElementById('social-ig').href = settings.instagram;
           if (settings.facebook)  document.getElementById('social-fb').href = settings.facebook;
           if (settings.tiktok)    document.getElementById('social-tt').href = settings.tiktok;
+          // About section image (editable from admin panel)
+          if (settings.aboutImage) {
+            const aboutImg = document.getElementById('about-section-img');
+            if (aboutImg) aboutImg.src = settings.aboutImage;
+          }
+          // Store tagline
+          if (settings.tagline) {
+            const heroTag = document.querySelector('.hero-tagline');
+            if (heroTag) heroTag.textContent = settings.tagline;
+          }
         }
       } catch (e) { console.error('Settings load error:', e); }
 
@@ -452,11 +462,12 @@
           const grid = document.getElementById('products-grid');
           grid.innerHTML = dbProducts.map((p, idx) => {
             const sizes = Array.isArray(p.sizes) ? p.sizes : (p.sizes || '').split(',').map(s => s.trim()).filter(Boolean);
-            const usd = p.priceUSD ? `~$${p.priceUSD}` : `~$${Math.round(p.price / 110)}`;
-            const origPriceHtml = (p.originalPrice && p.originalPrice > p.price)
-              ? `<span style="text-decoration:line-through;color:var(--smoke);font-size:0.85em;margin-left:0.4rem">৳ ${p.originalPrice.toLocaleString()}</span>`
+            const hasDiscount = p.originalPrice && p.originalPrice > p.price;
+            const origPriceHtml = hasDiscount
+              ? `<span style="text-decoration:line-through;color:var(--smoke);font-size:0.82em;margin-left:0.5rem;opacity:0.7">৳ ${p.originalPrice.toLocaleString()}</span>
+                 <span style="background:#ef4444;color:#fff;font-size:0.65em;padding:0.15rem 0.4rem;border-radius:3px;margin-left:0.4rem;font-weight:700;vertical-align:middle">SALE</span>`
               : '';
-            const tagText = p.tag || (p.originalPrice && p.originalPrice > p.price ? 'Sale' : '');
+            const tagText = p.tag || (hasDiscount ? 'Sale' : '');
             return `
               <div class="product-card reveal" data-product-id="${p.id}">
                 <div class="product-image">
@@ -470,7 +481,7 @@
                 <div class="product-info">
                   <h3 class="product-name"><a href="product.html?id=${p.id}" style="color:inherit;text-decoration:none">${p.name}</a></h3>
                   <p class="product-desc">${p.description || ''}</p>
-                  <div class="product-price">৳ ${p.price.toLocaleString()} ${origPriceHtml} <span class="usd">${usd}</span></div>
+                  <div class="product-price">৳ ${p.price.toLocaleString()} ${origPriceHtml}</div>
                   <div class="size-selector" data-product="${p.id}">
                     ${sizes.map((s, i) => `<span class="size-btn ${i === 0 ? 'selected' : ''}" data-size="${s}" onclick="selectSizeBtn(this)">${s}</span>`).join('')}
                   </div>

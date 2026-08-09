@@ -32,11 +32,26 @@ const HazeDB = (() => {
   function setCart(cart) {
     localStorage.setItem('haze_cart', JSON.stringify(cart));
   }
-  function addToCart(productId, size, qty = 1) {
+  function addToCart(productId, size, qty = 1, productInfo = null) {
     const cart = getCart();
     const existing = cart.find(i => i.productId === productId && i.size === size);
-    if (existing) existing.qty += qty;
-    else cart.push({ productId, size, qty, addedAt: Date.now() });
+    if (existing) {
+      existing.qty += qty;
+      // Update product info if provided
+      if (productInfo) {
+        existing.name  = productInfo.name  || existing.name;
+        existing.price = productInfo.price || existing.price;
+        existing.image = productInfo.image || existing.image;
+      }
+    } else {
+      const item = { productId, size, qty, addedAt: Date.now() };
+      if (productInfo) {
+        item.name  = productInfo.name;
+        item.price = productInfo.price;
+        item.image = productInfo.image;
+      }
+      cart.push(item);
+    }
     setCart(cart);
     return cart;
   }
@@ -62,15 +77,24 @@ const HazeDB = (() => {
     const products = await getProducts();
     return getCart().reduce((sum, item) => {
       const p = products.find(prod => prod.id === item.productId);
-      return sum + (p ? p.price * item.qty : 0);
+      const price = p ? p.price : (item.price || 0);
+      return sum + price * item.qty;
     }, 0);
   }
   async function getCartItems() {
     const products = await getProducts();
     return getCart().map(item => {
-      const p = products.find(prod => prod.id === item.productId);
-      return p ? { ...item, product: p } : null;
-    }).filter(Boolean);
+      let p = products.find(prod => prod.id === item.productId);
+      // If product not in DB (e.g. hardcoded), create a stub from cart item data
+      if (!p && item.name) {
+        p = { id: item.productId, name: item.name, price: item.price || 0, image: item.image || 'images/product-tee.png', sizes: [] };
+      }
+      // If still no product, build minimal stub so cart still shows
+      if (!p) {
+        p = { id: item.productId, name: item.productId, price: item.price || 0, image: 'images/product-tee.png', sizes: [] };
+      }
+      return { ...item, product: p };
+    });
   }
 
   // ── PRODUCTS ─────────────────────────────────────────

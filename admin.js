@@ -795,13 +795,48 @@ async function renderSettings() {
 
       <!-- Social Links -->
       <div class="panel">
-        <div class="panel-header"><div class="panel-title">Social Media Links</div></div>
+        <div class="panel-header"><div class="panel-title">🌐 Social Media Links</div></div>
         <div class="panel-body">
           <div class="admin-form">
-            <div class="form-field"><label>Instagram URL</label><input type="url" id="s-ig" value="${s.instagram || ''}" placeholder="https://instagram.com/yourhandle"></div>
-            <div class="form-field"><label>Facebook URL</label><input type="url" id="s-fb" value="${s.facebook || ''}" placeholder="https://facebook.com/yourpage"></div>
-            <div class="form-field"><label>TikTok URL</label><input type="url" id="s-tt" value="${s.tiktok || ''}" placeholder="https://tiktok.com/@yourhandle"></div>
-            <button class="btn btn-primary" onclick="saveSocialSettings()">Save Social Links</button>
+            <div class="form-field">
+              <label>Instagram URL</label>
+              <input type="text" id="s-ig" value="${s.instagram || ''}" placeholder="https://instagram.com/yourhandle">
+            </div>
+            <div class="form-field">
+              <label>Facebook URL</label>
+              <input type="text" id="s-fb" value="${s.facebook || ''}" placeholder="https://facebook.com/yourpage">
+            </div>
+            <div class="form-field">
+              <label>TikTok URL</label>
+              <input type="text" id="s-tt" value="${s.tiktok || ''}" placeholder="https://tiktok.com/@yourhandle">
+            </div>
+            <button class="btn btn-primary" style="width:100%;margin-top:0.5rem" id="social-save-btn" onclick="saveSocialSettings()">💾 Save Social Links</button>
+            <div id="social-save-msg" style="margin-top:0.5rem;font-size:0.8rem;display:none"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- About Section Image -->
+      <div class="panel" style="border:1px solid rgba(139,92,246,0.3)">
+        <div class="panel-header" style="background:rgba(139,92,246,0.08)">
+          <div class="panel-title">🖼️ "Born from a feeling" Section — ছবি পরিবর্তন</div>
+        </div>
+        <div class="panel-body">
+          <p style="font-size:0.8rem;color:var(--ash);margin-bottom:1rem">এখানে যে ছবি দেবেন সেটাই ওয়েবসাইটের About Section-এ দেখাবে</p>
+          ${s.aboutImage ? `<div style="margin-bottom:1rem;text-align:center"><img src="${s.aboutImage}" style="max-height:140px;max-width:100%;object-fit:contain;border:1px solid rgba(139,92,246,0.2);border-radius:4px"></div>` : ''}
+          <div class="admin-form">
+            <div class="form-field">
+              <button type="button" class="btn btn-primary" onclick="document.getElementById('about-img-file').click()" style="width:100%;padding:0.8rem;font-weight:600">
+                📁 Choose New Photo from Device
+              </button>
+              <input type="file" id="about-img-file" accept="image/*" style="display:none" onchange="uploadAboutImage(this)">
+              <div id="about-img-status" style="font-size:0.8rem;margin-top:0.5rem;min-height:1em;font-weight:600"></div>
+            </div>
+            <div class="form-field">
+              <label>অথবা Image URL paste করুন</label>
+              <input type="text" id="s-about-img" value="${s.aboutImage || ''}" placeholder="https://... অথবা uploads/products/...">
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="saveAboutImageSettings()">💾 Save About Image</button>
           </div>
         </div>
       </div>
@@ -835,14 +870,69 @@ async function savePaymentSettings() {
 }
 
 async function saveSocialSettings() {
+  const btn = document.getElementById('social-save-btn');
+  const msg = document.getElementById('social-save-msg');
+  const ig  = document.getElementById('s-ig').value.trim();
+  const fb  = document.getElementById('s-fb').value.trim();
+  const tt  = document.getElementById('s-tt').value.trim();
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
   try {
-    const res = await HazeDB.updateSettings({
-      instagram: document.getElementById('s-ig').value.trim(),
-      facebook:  document.getElementById('s-fb').value.trim(),
-      tiktok:    document.getElementById('s-tt').value.trim()
-    });
-    if (res && res.ok === false) throw new Error(res.error || 'Failed');
-    toast('✓ Social links saved!');
+    const res = await HazeDB.updateSettings({ instagram: ig, facebook: fb, tiktok: tt });
+    if (!res || res.ok === false) throw new Error(res ? (res.error || 'Save failed') : 'No response from server');
+    toast('✓ Social links saved successfully!');
+    if (msg) { msg.textContent = '✓ Saved!'; msg.style.color = '#4ade80'; msg.style.display = 'block'; }
+  } catch(e) {
+    toast('Error saving: ' + e.message, 'error');
+    if (msg) { msg.textContent = '✗ ' + e.message; msg.style.color = '#f87171'; msg.style.display = 'block'; }
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '💾 Save Social Links'; }
+}
+
+async function uploadAboutImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('about-img-status');
+  status.textContent = '⏳ Uploading...';
+  status.style.color = 'var(--accent)';
+
+  const formData = new FormData();
+  formData.append('image', file);
+  try {
+    const res = await fetch('api.php?action=upload_image', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('s-about-img').value = data.url;
+      status.textContent = '✓ Uploaded! Now click Save.';
+      status.style.color = '#4ade80';
+    } else {
+      // Base64 fallback
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('s-about-img').value = e.target.result;
+        status.textContent = '✓ Ready! Click Save About Image.';
+        status.style.color = '#4ade80';
+      };
+      reader.readAsDataURL(file);
+    }
+  } catch(e) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('s-about-img').value = e.target.result;
+      status.textContent = '✓ Ready! Click Save About Image.';
+      status.style.color = '#4ade80';
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+async function saveAboutImageSettings() {
+  const url = document.getElementById('s-about-img').value.trim();
+  if (!url) { toast('কোনো ছবি দেননি', 'error'); return; }
+  try {
+    const res = await HazeDB.updateSettings({ aboutImage: url });
+    if (!res || res.ok === false) throw new Error(res ? res.error : 'Failed');
+    toast('✓ About section image saved!');
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 

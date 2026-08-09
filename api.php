@@ -143,7 +143,8 @@ if ($action === 'setup') {
             ('storeName','HAZE'),('tagline','Wear the Haze'),
             ('email','wearhaze.com@gmail.com'),('phone',''),
             ('bkash',''),('nagad',''),
-            ('instagram',''),('facebook',''),('tiktok','')"
+            ('instagram',''),('facebook',''),('tiktok',''),
+            ('aboutImage','images/product-tee.png')"
     ];
     foreach ($sqls as $sql) $pdo->exec($sql);
 
