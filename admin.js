@@ -519,23 +519,34 @@ async function showProductModal(productId = null) {
             </div>
           </div>
           <div class="form-field form-field-full">
-            <label>Product Image</label>
-            <div class="img-upload-area" id="img-upload-area" onclick="document.getElementById('pf-image-file').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleImgDrop(event)">
-              <div id="img-upload-placeholder">
-                <div style="font-size:2rem;margin-bottom:0.5rem">📷</div>
-                <div style="font-size:0.85rem;color:var(--ash)">Click or drag image here to upload</div>
-                <div style="font-size:0.7rem;color:var(--smoke);margin-top:0.3rem">JPG, PNG, WebP — max 5MB</div>
+            <label>Product Image — ছবি Upload করুন</label>
+
+            <div class="img-upload-area" id="img-upload-area"
+              onclick="document.getElementById('pf-image-file').click()"
+              ondragover="event.preventDefault();this.classList.add('drag-over')"
+              ondragleave="this.classList.remove('drag-over')"
+              ondrop="handleImgDrop(event)">
+
+              <div id="img-upload-placeholder" style="text-align:center;pointer-events:none;${p.image ? 'display:none' : ''}">
+                <div style="font-size:2.5rem;margin-bottom:0.6rem">📷</div>
+                <div style="font-size:0.9rem;color:var(--ghost);font-weight:600">Click করুন বা Drag করুন</div>
+                <div style="font-size:0.72rem;color:var(--smoke);margin-top:0.3rem">JPG · PNG · WebP — সর্বোচ্চ 5MB</div>
               </div>
-              <img id="img-preview" src="${p.image || ''}" style="display:${p.image ? 'block' : 'none'};max-height:180px;max-width:100%;object-fit:contain;margin:auto">
+
+              <img id="img-preview" src="${p.image || ''}"
+                style="display:${p.image ? 'block' : 'none'};max-height:200px;max-width:100%;object-fit:contain;margin:0 auto;pointer-events:none">
             </div>
-            <input type="file" id="pf-image-file" accept="image/*" style="display:none" onchange="uploadProductImage(this)">
-            <div id="img-upload-status" style="font-size:0.75rem;margin-top:0.4rem;color:var(--accent)"></div>
-            <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.6rem">
+
+            <input type="file" id="pf-image-file" accept="image/jpeg,image/png,image/webp,image/gif"
+              style="display:none" onchange="uploadProductImage(this)">
+            <div id="img-upload-status" style="font-size:0.78rem;margin-top:0.5rem;min-height:1.2em"></div>
+
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.8rem;margin-bottom:0.4rem">
               <div style="flex:1;height:1px;background:rgba(107,79,160,0.15)"></div>
-              <span style="font-size:0.7rem;color:var(--smoke)">or paste URL</span>
+              <span style="font-size:0.65rem;color:var(--smoke);letter-spacing:0.1em;text-transform:uppercase">অথবা URL দিন</span>
               <div style="flex:1;height:1px;background:rgba(107,79,160,0.15)"></div>
             </div>
-            <input type="text" id="pf-image" value="${p.image}" placeholder="https://... or images/product.png" style="margin-top:0.5rem">
+            <input type="text" id="pf-image" value="${p.image || ''}" placeholder="https://... অথবা images/product.png">
           </div>
           <div class="form-field form-field-full">
             <label>Available Sizes (comma separated)</label>

@@ -481,17 +481,45 @@
     // Quick View Logic
     let currentQVProduct = null;
     async function openQuickView(productId) {
-      const product = await HazeDB.getProduct(productId);
-      if (!product) return;
+      // First try the API
+      let product = await HazeDB.getProduct(productId);
+
+      // Fallback: read data from the card DOM (for hardcoded/static products)
+      if (!product) {
+        const card = document.querySelector(`.product-card[data-product-id="${productId}"]`);
+        if (!card) return;
+        const img    = card.querySelector('.product-image img');
+        const name   = card.querySelector('.product-name');
+        const price  = card.querySelector('.product-price');
+        const desc   = card.querySelector('.product-desc');
+        const sizes  = [...card.querySelectorAll('.size-btn')].map(b => b.dataset.size);
+        const tag    = card.querySelector('.product-tag');
+
+        // Parse price number from text like "৳ 850 ~$8"
+        const priceText = price ? price.textContent.replace(/[^\d]/g, '') : '0';
+
+        product = {
+          id: productId,
+          name: name ? name.textContent.trim() : '',
+          description: desc ? desc.textContent.trim() : '',
+          price: parseInt(priceText) || 0,
+          image: img ? img.src : '',
+          sizes: sizes,
+          tag: tag ? tag.textContent.trim() : '',
+          stock: 99
+        };
+      }
+
       currentQVProduct = product;
-      document.getElementById('qv-img').src = product.image;
+      document.getElementById('qv-img').src = product.image || '';
       document.getElementById('qv-title').textContent = product.name;
       document.getElementById('qv-price').textContent = `৳ ${product.price.toLocaleString()}`;
-      document.getElementById('qv-desc').textContent = product.description;
+      document.getElementById('qv-desc').textContent = product.description || '';
       
       const sizeContainer = document.getElementById('qv-sizes');
       sizeContainer.innerHTML = '';
-      product.sizes.forEach((s, i) => {
+      const sizes = Array.isArray(product.sizes) ? product.sizes : (product.sizes || '').split(',').map(s => s.trim()).filter(Boolean);
+      sizes.forEach((s, i) => {
         const btn = document.createElement('span');
         btn.className = `size-btn ${i === 0 ? 'selected' : ''}`;
         btn.textContent = s;
