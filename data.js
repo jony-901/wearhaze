@@ -151,8 +151,7 @@ const HazeDB = (() => {
     return await apiCall('delete_order', { orderId });
   }
 
-  // ── USER AUTH (Session stored in JS, real auth in PHP) ─
-  // ── USER AUTH (Session + LocalStorage for SSO) ──────────
+  // ── USER AUTH (localStorage + sessionStorage) ──────────
   function getCurrentUser() {
     try {
       const data = sessionStorage.getItem('haze_user') || localStorage.getItem('haze_user');

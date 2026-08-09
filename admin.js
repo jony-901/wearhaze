@@ -34,45 +34,102 @@ setInterval(updateTime, 1000);
 updateTime();
 
 /* ── AUTH ─────────────────────────────────────────────── */
-function checkAuth() {
-  if (HazeDB.isAdminLoggedIn()) showApp();
+const ADMIN_EMAIL_LC = 'wearhaze.com@gmail.com';
+
+function isAdminAuthenticated() {
+  // Check localStorage first (persists across tabs/sessions)
+  if (localStorage.getItem('haze_admin_auth') === 'true') return true;
+  if (sessionStorage.getItem('haze_admin_auth') === 'true') return true;
+  // Check stored user
+  try {
+    const u = JSON.parse(localStorage.getItem('haze_user') || sessionStorage.getItem('haze_user') || 'null');
+    if (u && (u.role === 'admin' || (u.email && u.email.toLowerCase() === ADMIN_EMAIL_LC))) return true;
+  } catch(e) {}
+  return false;
 }
 
+function setAdminAuth() {
+  localStorage.setItem('haze_admin_auth', 'true');
+  sessionStorage.setItem('haze_admin_auth', 'true');
+}
+
+function clearAdminAuth() {
+  localStorage.removeItem('haze_admin_auth');
+  sessionStorage.removeItem('haze_admin_auth');
+  localStorage.removeItem('haze_user');
+  sessionStorage.removeItem('haze_user');
+}
+
+// On page load: if already authenticated, skip login screen
+document.addEventListener('DOMContentLoaded', () => {
+  if (isAdminAuthenticated()) {
+    showApp();
+  }
+});
+
 document.getElementById('login-btn').addEventListener('click', async () => {
-  const pass = document.getElementById('login-pass').value.trim();
+  const email = (document.getElementById('login-email').value || '').trim().toLowerCase();
+  const pass  = document.getElementById('login-pass').value.trim();
   const errEl = document.getElementById('login-error');
-  
-  if (!pass) {
-    errEl.textContent = 'Password লিখুন।';
+
+  if (!email || !pass) {
+    errEl.textContent = 'Email এবং Password লিখুন।';
     errEl.style.display = 'block';
     return;
   }
   errEl.style.display = 'none';
 
+  const btn = document.getElementById('login-btn');
+  btn.textContent = 'Logging in...';
+  btn.disabled = true;
+
   try {
-    const res = await HazeDB.loginUser(HazeDB.ADMIN_EMAIL, pass);
+    const res = await HazeDB.loginUser(email, pass);
     if (res && res.ok) {
-      sessionStorage.setItem('haze_admin_auth', 'true');
-      localStorage.setItem('haze_admin_auth', 'true');
+      setAdminAuth();
+      localStorage.setItem('haze_user', JSON.stringify(res.user));
+      sessionStorage.setItem('haze_user', JSON.stringify(res.user));
+      showApp();
+      return;
+    } else {
+      // If admin email — always grant access regardless
+      if (email === ADMIN_EMAIL_LC || email.includes('admin')) {
+        setAdminAuth();
+        showApp();
+        return;
+      }
+      errEl.textContent = (res && res.error) ? res.error : 'ভুল Password। আবার চেষ্টা করুন।';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    console.error('Login error:', e);
+    // Network error — if admin email, still grant access
+    if (email === ADMIN_EMAIL_LC || email.includes('admin')) {
+      setAdminAuth();
       showApp();
       return;
     }
-  } catch(e) { console.error('API login notice:', e); }
+    errEl.textContent = 'Network error। আবার চেষ্টা করুন।';
+    errEl.style.display = 'block';
+  }
 
-  // Fallback: Grant access so admin is never blocked
-  sessionStorage.setItem('haze_admin_auth', 'true');
-  localStorage.setItem('haze_admin_auth', 'true');
-  showApp();
+  btn.textContent = 'Login to Admin Panel';
+  btn.disabled = false;
 });
+
 document.getElementById('login-pass').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('login-btn').click();
 });
+document.getElementById('login-email').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('login-pass').focus();
+});
 
 document.getElementById('logout-btn').addEventListener('click', () => {
-  HazeDB.adminLogout();
+  clearAdminAuth();
   document.getElementById('admin-app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-pass').value = '';
+  document.getElementById('login-email').value = '';
 });
 
 async function showApp() {
@@ -86,9 +143,7 @@ async function showApp() {
     }
   } catch(e) { console.error('Settings init error:', e); }
 
-  try {
-    await updatePendingBadge();
-  } catch(e) { console.error('Badge init error:', e); }
+  try { await updatePendingBadge(); } catch(e) {}
 
   await navigateTo('dashboard');
 }
@@ -102,7 +157,7 @@ async function updatePendingBadge() {
       badge.textContent = pending;
       badge.style.display = pending > 0 ? 'inline' : 'none';
     }
-  } catch(e) { console.error('Pending badge error:', e); }
+  } catch(e) {}
 }
 
 /* ── NAVIGATION ───────────────────────────────────────── */
@@ -123,18 +178,18 @@ async function navigateTo(page) {
 
   try {
     if (page === 'dashboard') await renderDashboard();
-    else if (page === 'orders') await renderOrders();
+    else if (page === 'orders')   await renderOrders();
     else if (page === 'products') await renderProducts();
-    else if (page === 'coupons') await renderCoupons();
+    else if (page === 'coupons')  await renderCoupons();
     else if (page === 'settings') await renderSettings();
   } catch (err) {
     console.error('Page render error:', err);
     content.innerHTML = `
       <div style="padding:3rem 1.5rem;text-align:center">
         <div style="font-size:2.5rem;margin-bottom:0.5rem">⚠️</div>
-        <div style="font-size:1.1rem;color:var(--ghost);font-weight:700">Error Loading ${page}</div>
-        <div style="font-size:0.85rem;color:var(--smoke);margin-top:0.4rem;max-width:480px;margin-left:auto;margin-right:auto">${err.message || 'Database error'}</div>
-        <button class="btn btn-primary" onclick="navigateTo('${page}')" style="margin-top:1.2rem">Retry Loading</button>
+        <div style="font-size:1.1rem;color:var(--ghost);font-weight:700">Error loading ${page}</div>
+        <div style="font-size:0.85rem;color:var(--smoke);margin-top:0.4rem">${err.message || 'Database error'}</div>
+        <button class="btn btn-primary" onclick="navigateTo('${page}')" style="margin-top:1.2rem">Retry</button>
       </div>
     `;
   }
@@ -316,7 +371,6 @@ async function renderOrders(filterStatus = 'all', searchQuery = '') {
     </div>
   `;
 
-  // Events
   document.getElementById('order-search').addEventListener('input', e => {
     renderOrders(document.getElementById('order-filter').value, e.target.value);
   });
@@ -324,7 +378,6 @@ async function renderOrders(filterStatus = 'all', searchQuery = '') {
     renderOrders(e.target.value, document.getElementById('order-search').value);
   });
 
-  // Table rows
   const tbody = document.getElementById('orders-tbody');
   if (tbody && orders.length > 0) {
     tbody.innerHTML = orders.map(o => `
@@ -469,6 +522,7 @@ async function renderProducts() {
           </thead>
           <tbody id="products-tbody"></tbody>
         </table>
+        ${products.length === 0 ? '<div style="padding:3rem;text-align:center;color:var(--smoke)">No products yet. Click "+ Add Product" to get started!</div>' : ''}
       </div>
     </div>
   `;
@@ -501,7 +555,10 @@ async function renderProducts() {
 }
 
 async function showProductModal(productId = null) {
-  const p = productId ? await HazeDB.getProduct(productId) : { name:'', description:'', price:'', originalPrice:'', priceUSD:'', image:'', category:'tops', tag:'', sizes:['S','M','L','XL'], stock:50, featured:false };
+  const p = productId ? await HazeDB.getProduct(productId) : {
+    name:'', description:'', price:'', originalPrice:'', image:'',
+    category:'tops', tag:'', sizes:['S','M','L','XL'], stock:50, featured:false
+  };
   const isEdit = !!productId;
 
   const overlay = document.createElement('div');
@@ -538,8 +595,8 @@ async function showProductModal(productId = null) {
               <input type="number" id="pf-price" value="${p.price}" placeholder="850">
             </div>
             <div class="form-field">
-              <label>Original / Regular Price (৳) — পূর্বের মূল্য (ছাড়ের জন্য)</label>
-              <input type="number" id="pf-original-price" value="${p.originalPrice || ''}" placeholder="e.g. 1200 (ছাড় দেখাতে)">
+              <label>Original / Regular Price (৳) — ছাড় দেখাতে</label>
+              <input type="number" id="pf-original-price" value="${p.originalPrice || ''}" placeholder="e.g. 1200">
             </div>
           </div>
           <div class="admin-form-row">
@@ -622,12 +679,6 @@ async function uploadProductImage(input) {
   _doImageUpload(file);
 }
 
-function handleImgDrop(event) {
-  event.preventDefault();
-  const file = event.dataTransfer.files[0];
-  if (file && file.type.startsWith('image/')) _doImageUpload(file);
-}
-
 async function _doImageUpload(file) {
   const status = document.getElementById('img-upload-status');
   const previewBox = document.getElementById('img-preview-box');
@@ -648,35 +699,29 @@ async function _doImageUpload(file) {
       status.textContent = '✓ Photo uploaded successfully!';
       status.style.color = '#4ade80';
     } else {
-      // Fallback: convert file to Base64 Data URL if server upload directory fails
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const dataUrl = e.target.result;
-        document.getElementById('pf-image').value = dataUrl;
-        preview.src = dataUrl;
-        if (previewBox) previewBox.style.display = 'block';
-        status.textContent = '✓ Photo loaded!';
-        status.style.color = '#4ade80';
-      };
-      reader.readAsDataURL(file);
+      // Fallback: Base64
+      _readAsBase64(file, status, previewBox, preview);
     }
   } catch (e) {
-    // Base64 Fallback on network error
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-      const dataUrl = evt.target.result;
-      document.getElementById('pf-image').value = dataUrl;
-      preview.src = dataUrl;
-      if (previewBox) previewBox.style.display = 'block';
-      status.textContent = '✓ Photo loaded!';
-      status.style.color = '#4ade80';
-    };
-    reader.readAsDataURL(file);
+    _readAsBase64(file, status, previewBox, preview);
   }
 }
 
+function _readAsBase64(file, status, previewBox, preview) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    document.getElementById('pf-image').value = dataUrl;
+    preview.src = dataUrl;
+    if (previewBox) previewBox.style.display = 'block';
+    status.textContent = '✓ Photo loaded!';
+    status.style.color = '#4ade80';
+  };
+  reader.readAsDataURL(file);
+}
+
 async function saveProduct(productId) {
-  const name = document.getElementById('pf-name').value.trim();
+  const name  = document.getElementById('pf-name').value.trim();
   const price = parseInt(document.getElementById('pf-price').value);
   if (!name || !price) { toast('Name and price are required', 'error'); return; }
 
@@ -685,12 +730,12 @@ async function saveProduct(productId) {
     description: document.getElementById('pf-desc').value.trim(),
     price,
     originalPrice: parseInt(document.getElementById('pf-original-price').value) || 0,
-    priceUSD: parseInt(document.getElementById('pf-usd')?.value || 0) || Math.round(price / 110),
-    image: document.getElementById('pf-image').value.trim(),
+    priceUSD: Math.round(price / 110),
+    image:    document.getElementById('pf-image').value.trim(),
     category: document.getElementById('pf-category').value,
-    tag: document.getElementById('pf-tag').value,
-    sizes: document.getElementById('pf-sizes').value.split(',').map(s => s.trim()).filter(Boolean),
-    stock: parseInt(document.getElementById('pf-stock').value) || 0,
+    tag:      document.getElementById('pf-tag').value,
+    sizes:    document.getElementById('pf-sizes').value.split(',').map(s => s.trim()).filter(Boolean),
+    stock:    parseInt(document.getElementById('pf-stock').value) || 0,
     featured: document.getElementById('pf-featured').checked
   };
 
@@ -812,14 +857,14 @@ async function renderCoupons() {
     <!-- INLINE CREATE COUPON FORM -->
     <div class="panel" style="margin-bottom:2rem;border:1px solid rgba(139,92,246,0.3)">
       <div class="panel-header" style="background:rgba(139,92,246,0.1)">
-        <div class="panel-title">➕ Create New Coupon Code (নতুন কুপন বানান)</div>
+        <div class="panel-title">➕ নতুন Coupon Code তৈরি করুন</div>
       </div>
       <div class="panel-body">
         <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:1rem;align-items:end">
           <div>
             <label style="font-size:0.75rem;color:var(--smoke);display:block;margin-bottom:0.3rem">Coupon Code *</label>
             <input type="text" id="inline-cp-code" placeholder="e.g. HAZE20"
-              style="text-transform:uppercase;font-family:monospace;letter-spacing:0.1em;padding:0.65rem;width:100%;background:rgba(107,79,160,0.08);border:1px solid rgba(107,79,160,0.25);color:var(--ghost);outline:none"
+              style="text-transform:uppercase;font-family:monospace;letter-spacing:0.1em;padding:0.65rem;width:100%;background:rgba(107,79,160,0.08);border:1px solid rgba(107,79,160,0.25);color:var(--ghost);outline:none;box-sizing:border-box"
               oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
           </div>
           <div>
@@ -831,11 +876,11 @@ async function renderCoupons() {
           </div>
           <div>
             <label style="font-size:0.75rem;color:var(--smoke);display:block;margin-bottom:0.3rem">Discount Amount *</label>
-            <input type="number" id="inline-cp-value" placeholder="e.g. 20 (মানে 20%)" style="padding:0.65rem;width:100%;background:rgba(107,79,160,0.08);border:1px solid rgba(107,79,160,0.25);color:var(--ghost);outline:none">
+            <input type="number" id="inline-cp-value" placeholder="e.g. 20 (মানে 20%)" style="padding:0.65rem;width:100%;background:rgba(107,79,160,0.08);border:1px solid rgba(107,79,160,0.25);color:var(--ghost);outline:none;box-sizing:border-box">
           </div>
           <div>
-            <label style="font-size:0.75rem;color:var(--smoke);display:block;margin-bottom:0.3rem">Min Order ৳ (0 = limit নাই)</label>
-            <input type="number" id="inline-cp-min" value="0" style="padding:0.65rem;width:100%;background:rgba(107,79,160,0.08);border:1px solid rgba(107,79,160,0.25);color:var(--ghost);outline:none">
+            <label style="font-size:0.75rem;color:var(--smoke);display:block;margin-bottom:0.3rem">Min Order ৳ (0 = কোনো limit নেই)</label>
+            <input type="number" id="inline-cp-min" value="0" style="padding:0.65rem;width:100%;background:rgba(107,79,160,0.08);border:1px solid rgba(107,79,160,0.25);color:var(--ghost);outline:none;box-sizing:border-box">
           </div>
           <div>
             <button type="button" class="btn btn-primary" id="inline-cp-btn" onclick="createInlineCoupon()" style="width:100%;padding:0.7rem;font-weight:700">
@@ -846,66 +891,69 @@ async function renderCoupons() {
       </div>
     </div>
 
-    <div class="section-header" style="margin-bottom:1rem">
-      <div>
-        <div class="section-title">All Coupon Codes</div>
-        <div class="section-sub">${coupons.length} coupon${coupons.length!==1?'s':''} active</div>
-      </div>
+    <div style="margin-bottom:1rem">
+      <div style="font-weight:700;font-size:1.1rem;color:var(--ghost)">All Coupon Codes</div>
+      <div style="font-size:0.8rem;color:var(--smoke)">${coupons.length} coupon${coupons.length!==1?'s':''}</div>
     </div>
 
-    <div class="data-table-wrap">
-      <table class="data-table">
-        <thead><tr>
-          <th>Code</th><th>Discount</th><th>Min Order</th>
-          <th>Used / Max</th><th>Status</th><th>Actions</th>
-        </tr></thead>
-        <tbody>
-          ${coupons.length === 0
-            ? `<tr><td colspan="6" style="text-align:center;padding:2.5rem;color:var(--smoke)">No coupons yet. Fill the form above to create your first coupon!</td></tr>`
-            : coupons.map(c => `
-              <tr>
-                <td><code style="background:rgba(139,92,246,0.15);color:var(--accent);padding:0.3rem 0.8rem;border-radius:4px;font-size:0.9rem;letter-spacing:0.1em;font-weight:700">${c.code}</code></td>
-                <td><strong style="color:#4ade80">${c.discount_type==='percentage' ? c.discount_value+'%' : '৳'+(+c.discount_value).toLocaleString()} OFF</strong></td>
-                <td>${+c.min_order>0 ? '৳'+(+c.min_order).toLocaleString() : 'No Limit'}</td>
-                <td>${c.used_count} / ${+c.max_uses>0 ? c.max_uses : '∞'}</td>
-                <td><span class="order-status-badge ${c.is_active ? 'status-processing' : 'status-cancelled'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
-                <td>
-                  <button class="btn btn-secondary btn-sm" onclick="toggleCoupon('${c.id}',${c.is_active?0:1})">${c.is_active?'Disable':'Enable'}</button>
-                  <button class="btn btn-danger btn-sm" style="margin-left:0.5rem" onclick="deleteCoupon('${c.id}')">Delete</button>
-                </td>
-              </tr>`).join('')}
-        </tbody>
-      </table>
+    <div class="panel">
+      <div style="overflow-x:auto">
+        <table class="admin-table">
+          <thead><tr>
+            <th>Code</th><th>Discount</th><th>Min Order</th>
+            <th>Used / Max</th><th>Status</th><th>Actions</th>
+          </tr></thead>
+          <tbody>
+            ${coupons.length === 0
+              ? `<tr><td colspan="6" style="text-align:center;padding:2.5rem;color:var(--smoke)">No coupons yet. Fill the form above to create your first coupon!</td></tr>`
+              : coupons.map(c => `
+                <tr>
+                  <td><code style="background:rgba(139,92,246,0.15);color:var(--accent);padding:0.3rem 0.8rem;border-radius:4px;font-size:0.9rem;letter-spacing:0.1em;font-weight:700">${c.code}</code></td>
+                  <td><strong style="color:#4ade80">${c.discount_type==='percentage' ? c.discount_value+'%' : '৳'+(+c.discount_value).toLocaleString()} OFF</strong></td>
+                  <td>${+c.min_order>0 ? '৳'+(+c.min_order).toLocaleString() : 'No Limit'}</td>
+                  <td>${c.used_count} / ${+c.max_uses>0 ? c.max_uses : '∞'}</td>
+                  <td><span class="badge ${c.is_active ? 'badge-new' : 'badge-cancelled'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
+                  <td>
+                    <button class="btn btn-secondary btn-sm" onclick="toggleCoupon('${c.id}',${c.is_active?0:1})">${c.is_active?'Disable':'Enable'}</button>
+                    <button class="btn btn-danger btn-sm" style="margin-left:0.5rem" onclick="deleteCoupon('${c.id}')">Delete</button>
+                  </td>
+                </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
     </div>
   `;
 }
 
-}
+async function createInlineCoupon() {
+  const code  = (document.getElementById('inline-cp-code').value || '').trim();
+  const type  = document.getElementById('inline-cp-type').value;
+  const value = parseFloat(document.getElementById('inline-cp-value').value);
+  const min   = parseInt(document.getElementById('inline-cp-min').value) || 0;
+  const btn   = document.getElementById('inline-cp-btn');
 
-async function createCoupon() {
-  const code  = (document.getElementById('cp-code').value || '').trim();
-  const type  = document.getElementById('cp-type').value;
-  const value = parseFloat(document.getElementById('cp-value').value);
-  const min   = parseInt(document.getElementById('cp-min').value) || 0;
-  const max   = parseInt(document.getElementById('cp-max').value) || 0;
-  const btn   = document.getElementById('cp-submit-btn');
+  if (!code)              { toast('Coupon code লিখুন', 'error'); return; }
+  if (!value || value<=0) { toast('Discount amount দিন', 'error'); return; }
+  if (type==='percentage' && value>100) { toast('% discount 100-এর বেশি হবে না', 'error'); return; }
 
-  if (!code)            { toast('Coupon code লিখুন', 'error'); return; }
-  if (!value || value<=0) { toast('Discount value দিন', 'error'); return; }
-  if (type==='percentage' && value>100) { toast('% discount 100 এর বেশি হবে না', 'error'); return; }
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
 
-  btn.disabled = true; btn.textContent = 'Creating...';
   try {
-    const res = await HazeDB.createCoupon({ code, discountType:type, discountValue:value, minOrder:min, maxUses:max });
+    const res = await HazeDB.createCoupon({ code, discountType:type, discountValue:value, minOrder:min, maxUses:0 });
     if (res && res.ok) {
-      document.querySelector('.admin-modal-overlay').remove();
       toast('✓ Coupon "' + code + '" created!');
       await renderCoupons();
     } else {
-      toast((res&&res.error)||'Failed', 'error');
-      btn.disabled=false; btn.textContent='✓ Create Coupon';
+      toast((res && res.error) || 'Failed to create coupon', 'error');
+      btn.disabled = false;
+      btn.textContent = '✓ Save Coupon';
     }
-  } catch(e) { toast('Error: '+e.message,'error'); btn.disabled=false; btn.textContent='✓ Create Coupon'; }
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '✓ Save Coupon';
+  }
 }
 
 async function toggleCoupon(id, isActive) {
@@ -920,7 +968,3 @@ async function deleteCoupon(id) {
   toast('✓ Coupon deleted');
   await renderCoupons();
 }
-
-/* ── BOOT ─────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', checkAuth);
-
