@@ -48,10 +48,18 @@ async function updatePendingBadge() {
 
 
 
-/* ── NAVIGATION ───────────────────────────────────────── */
-document.querySelectorAll('.sidebar-link[data-page]').forEach(link => {
-  link.addEventListener('click', () => navigateTo(link.dataset.page));
-});
+/* ── NAVIGATION SETUP (safe for any load order) ─────── */
+function initSidebarNav() {
+  document.querySelectorAll('.sidebar-link[data-page]').forEach(link => {
+    link.addEventListener('click', () => navigateTo(link.dataset.page));
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initSidebarNav);
+} else {
+  initSidebarNav();
+}
+
 
 async function navigateTo(page) {
   document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
