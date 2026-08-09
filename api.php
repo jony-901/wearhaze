@@ -18,9 +18,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // DATABASE CONFIGURATION — Hostinger
 // ==========================================
 $db_host = 'localhost';
-$db_name = 'wearhaze_db'; // Hostinger DB Name
-$db_user = 'wearhaze_user'; // Hostinger DB User
-$db_pass = 'WearHazeDetaBasePass1'; // Hostinger DB Password
+$db_name = 'u304991648_wearhaze_db';   // Hostinger DB Name
+$db_user = 'u304991648_wearhaze_user'; // Hostinger DB User
+$db_pass = 'WearHazeDetaBasePass1';    // Hostinger DB Password
 
 try {
     $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8mb4", $db_user, $db_pass);
