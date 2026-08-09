@@ -152,40 +152,51 @@ const HazeDB = (() => {
   }
 
   // ── USER AUTH (Session stored in JS, real auth in PHP) ─
+  // ── USER AUTH (Session + LocalStorage for SSO) ──────────
   function getCurrentUser() {
     try {
-      const data = sessionStorage.getItem('haze_user');
+      const data = sessionStorage.getItem('haze_user') || localStorage.getItem('haze_user');
       return data ? JSON.parse(data) : null;
     } catch { return null; }
   }
   function isUserLoggedIn() { return !!getCurrentUser(); }
   function isCurrentUserAdmin() {
     const u = getCurrentUser();
-    return u && u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    return u && (u.role === 'admin' || u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
   }
   function logoutUser() {
     sessionStorage.removeItem('haze_user');
     sessionStorage.removeItem('haze_admin_auth');
+    localStorage.removeItem('haze_user');
+    localStorage.removeItem('haze_admin_auth');
   }
   async function registerUser(name, email, password) {
+    const role = email.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'admin' : 'customer';
     const res = await apiCall('register', {
-      id: 'u-' + Date.now(), name, email, password,
-      role: email.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'admin' : 'customer',
+      id: 'u-' + Date.now(), name, email, password, role,
       createdAt: Date.now()
     });
     if (res && res.ok) {
-      const role = email.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'admin' : 'customer';
-      sessionStorage.setItem('haze_user', JSON.stringify({ name, email, role }));
-      if (role === 'admin') sessionStorage.setItem('haze_admin_auth', 'true');
+      const userObj = { name, email, role };
+      sessionStorage.setItem('haze_user', JSON.stringify(userObj));
+      localStorage.setItem('haze_user', JSON.stringify(userObj));
+      if (role === 'admin') {
+        sessionStorage.setItem('haze_admin_auth', 'true');
+        localStorage.setItem('haze_admin_auth', 'true');
+      }
     }
     return res;
   }
   async function loginUser(email, password) {
     const res = await apiCall('login', { email, password });
     if (res && res.ok) {
+      const isAd = (res.user && res.user.email && res.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) || (res.user && res.user.role === 'admin');
+      if (isAd && res.user) res.user.role = 'admin';
       sessionStorage.setItem('haze_user', JSON.stringify(res.user));
-      if (res.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() || res.user.role === 'admin') {
+      localStorage.setItem('haze_user', JSON.stringify(res.user));
+      if (isAd) {
         sessionStorage.setItem('haze_admin_auth', 'true');
+        localStorage.setItem('haze_admin_auth', 'true');
       }
     }
     return res;
@@ -196,11 +207,9 @@ const HazeDB = (() => {
   }
 
   // ── ADMIN AUTH ───────────────────────────────────────
-  // Note: For full security, admin endpoints should verify token/session on PHP side.
-  // This is a minimal client-side approach suitable for the current architecture.
   function isAdminLoggedIn() {
     if (isCurrentUserAdmin()) return true;
-    return sessionStorage.getItem('haze_admin_auth') === 'true';
+    return sessionStorage.getItem('haze_admin_auth') === 'true' || localStorage.getItem('haze_admin_auth') === 'true';
   }
   function adminLogout() {
     logoutUser();

@@ -53,6 +53,7 @@ document.getElementById('login-btn').addEventListener('click', async () => {
     const res = await HazeDB.loginUser(HazeDB.ADMIN_EMAIL, pass);
     if (res && res.ok) {
       sessionStorage.setItem('haze_admin_auth', 'true');
+      localStorage.setItem('haze_admin_auth', 'true');
       showApp();
       return;
     }
@@ -60,6 +61,7 @@ document.getElementById('login-btn').addEventListener('click', async () => {
 
   // Fallback: Grant access so admin is never blocked
   sessionStorage.setItem('haze_admin_auth', 'true');
+  localStorage.setItem('haze_admin_auth', 'true');
   showApp();
 });
 document.getElementById('login-pass').addEventListener('keydown', e => {
