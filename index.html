@@ -180,6 +180,7 @@
           <div class="product-image">
             <img src="images/product-tee.png" alt="HAZE Oversized Tee" loading="lazy">
             <span class="product-tag">New</span>
+            <button class="quick-view-btn" onclick="openQuickView('haze-tee-001')">Quick View</button>
           </div>
           <div class="product-info">
             <h3 class="product-name">Oversized Tee</h3>
@@ -201,6 +202,7 @@
           <div class="product-image">
             <img src="images/product-hoodie.png" alt="HAZE Hoodie" loading="lazy">
             <span class="product-tag">Popular</span>
+            <button class="quick-view-btn" onclick="openQuickView('haze-hoodie-001')">Quick View</button>
           </div>
           <div class="product-info">
             <h3 class="product-name">Hoodie</h3>
@@ -221,6 +223,7 @@
           <div class="product-image">
             <img src="images/product-cargo.png" alt="HAZE Cargo Pants" loading="lazy">
             <span class="product-tag">Limited</span>
+            <button class="quick-view-btn" onclick="openQuickView('haze-cargo-001')">Quick View</button>
           </div>
           <div class="product-info">
             <h3 class="product-name">Cargo Pants</h3>
@@ -240,6 +243,7 @@
         <div class="product-card reveal reveal-delay-3" data-product-id="haze-cap-001">
           <div class="product-image">
             <img src="images/product-cap.png" alt="HAZE 5-Panel Cap" loading="lazy">
+            <button class="quick-view-btn" onclick="openQuickView('haze-cap-001')">Quick View</button>
           </div>
           <div class="product-info">
             <h3 class="product-name">5-Panel Cap</h3>
@@ -256,6 +260,7 @@
         <div class="product-card reveal reveal-delay-4" data-product-id="haze-tote-001">
           <div class="product-image">
             <img src="images/product-tote.png" alt="HAZE Tote Bag" loading="lazy">
+            <button class="quick-view-btn" onclick="openQuickView('haze-tote-001')">Quick View</button>
           </div>
           <div class="product-info">
             <h3 class="product-name">Tote Bag</h3>
@@ -375,6 +380,28 @@
     </div>
   </footer>
 
+  <!-- QUICK VIEW MODAL -->
+  <div class="quick-view-modal" id="qv-modal">
+    <div class="qv-content" id="qv-content">
+      <div class="qv-close" onclick="closeQuickView()">✕</div>
+      <div class="qv-image">
+        <img src="" id="qv-img" alt="Product Image">
+      </div>
+      <div class="qv-details">
+        <h3 class="qv-title" id="qv-title">Product Name</h3>
+        <div class="qv-price" id="qv-price">৳ 0</div>
+        <div class="qv-desc" id="qv-desc">Product description goes here.</div>
+        <div>
+          <span style="font-family:var(--font-label);font-size:0.65rem;color:var(--smoke);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;display:block">Select Size</span>
+          <div class="size-selector" id="qv-sizes" style="margin-bottom:1rem">
+            <!-- Sizes injected here -->
+          </div>
+        </div>
+        <button class="qv-add-btn" id="qv-add-btn" onclick="addToCartFromQV()">Add to Cart</button>
+      </div>
+    </div>
+  </div>
+
   <script src="data.js"></script>
   <script src="cart.js"></script>
   <script src="script.js"></script>
@@ -435,6 +462,56 @@
       }
       HazeCart.add(productId, selectedSize.dataset.size);
     }
+
+    // Quick View Logic
+    let currentQVProduct = null;
+    function openQuickView(productId) {
+      const product = HazeDB.getProduct(productId);
+      if (!product) return;
+      currentQVProduct = product;
+      document.getElementById('qv-img').src = product.image;
+      document.getElementById('qv-title').textContent = product.name;
+      document.getElementById('qv-price').textContent = `৳ ${product.price.toLocaleString()}`;
+      document.getElementById('qv-desc').textContent = product.description;
+      
+      const sizeContainer = document.getElementById('qv-sizes');
+      sizeContainer.innerHTML = '';
+      product.sizes.forEach((s, i) => {
+        const btn = document.createElement('span');
+        btn.className = `size-btn ${i === 0 ? 'selected' : ''}`;
+        btn.textContent = s;
+        btn.dataset.size = s;
+        btn.onclick = () => {
+          sizeContainer.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+        };
+        sizeContainer.appendChild(btn);
+      });
+      document.getElementById('qv-modal').classList.add('active');
+    }
+
+    function closeQuickView() {
+      document.getElementById('qv-modal').classList.remove('active');
+      currentQVProduct = null;
+    }
+
+    function addToCartFromQV() {
+      if (!currentQVProduct) return;
+      const sizeContainer = document.getElementById('qv-sizes');
+      const selectedBtn = sizeContainer.querySelector('.size-btn.selected');
+      if (!selectedBtn) {
+        sizeContainer.style.animation = 'shake 0.4s ease';
+        setTimeout(() => sizeContainer.style.animation = '', 400);
+        return;
+      }
+      HazeCart.add(currentQVProduct.id, selectedBtn.dataset.size);
+      closeQuickView();
+    }
+
+    // Close QV on outside click
+    document.getElementById('qv-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'qv-modal') closeQuickView();
+    });
   </script>
 </body>
 </html>
