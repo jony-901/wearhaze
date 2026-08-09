@@ -48,17 +48,7 @@ async function updatePendingBadge() {
 
 
 
-/* ── NAVIGATION SETUP (safe for any load order) ─────── */
-function initSidebarNav() {
-  document.querySelectorAll('.sidebar-link[data-page]').forEach(link => {
-    link.addEventListener('click', () => navigateTo(link.dataset.page));
-  });
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initSidebarNav);
-} else {
-  initSidebarNav();
-}
+
 
 
 async function navigateTo(page) {
@@ -95,75 +85,74 @@ async function navigateTo(page) {
    DASHBOARD
 ══════════════════════════════════════════════════════ */
 async function renderDashboard() {
-  const analytics = await HazeDB.getAnalytics();
-  // Also directly get product count to ensure accuracy
+  // Safe defaults in case API is unavailable
+  let analytics = {
+    totalRevenue: 0, totalOrders: 0, pendingOrders: 0, deliveredOrders: 0,
+    totalProducts: 0, totalStock: 0,
+    revenueByDay: [], topProducts: [], recentOrders: [], statusCounts: {}
+  };
   try {
-    const allProducts = await HazeDB.getProducts();
-    analytics.totalProducts = allProducts.length;
-    analytics.totalStock = allProducts.reduce((s, p) => s + (parseInt(p.stock) || 0), 0);
+    const a = await HazeDB.getAnalytics();
+    if (a) analytics = a;
+  } catch(e) { console.warn('Analytics fetch failed:', e); }
+
+  // Direct product count for accuracy
+  try {
+    const prods = await HazeDB.getProducts();
+    if (Array.isArray(prods)) {
+      analytics.totalProducts = prods.length;
+      analytics.totalStock    = prods.reduce((s, p) => s + (parseInt(p.stock) || 0), 0);
+    }
   } catch(e) {}
+
   const content = document.getElementById('admin-content');
+  if (!content) return;
 
   content.innerHTML = `
-    <!-- STAT CARDS -->
     <div class="stat-cards">
       <div class="stat-card">
         <div class="stat-card-icon">💰</div>
         <div class="stat-card-label">Total Revenue</div>
-        <div class="stat-card-value">৳ ${analytics.totalRevenue.toLocaleString()}</div>
+        <div class="stat-card-value">৳ ${(analytics.totalRevenue || 0).toLocaleString()}</div>
         <div class="stat-card-sub">All time</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-icon">📦</div>
         <div class="stat-card-label">Total Orders</div>
-        <div class="stat-card-value">${analytics.totalOrders}</div>
-        <div class="stat-card-sub">${analytics.pendingOrders} pending</div>
+        <div class="stat-card-value">${analytics.totalOrders || 0}</div>
+        <div class="stat-card-sub">${analytics.pendingOrders || 0} pending</div>
       </div>
       <div class="stat-card" onclick="navigateTo('products')" style="cursor:pointer">
         <div class="stat-card-icon">👕</div>
         <div class="stat-card-label">Products</div>
-        <div class="stat-card-value" id="dash-product-count">${analytics.totalProducts}</div>
-        <div class="stat-card-sub">${analytics.totalStock} in stock</div>
+        <div class="stat-card-value">${analytics.totalProducts || 0}</div>
+        <div class="stat-card-sub">${analytics.totalStock || 0} in stock</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-icon">✅</div>
         <div class="stat-card-label">Delivered</div>
-        <div class="stat-card-value">${analytics.deliveredOrders}</div>
+        <div class="stat-card-value">${analytics.deliveredOrders || 0}</div>
         <div class="stat-card-sub">orders completed</div>
       </div>
     </div>
 
-    <!-- REVENUE CHART + TOP PRODUCTS -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
-
-      <!-- Chart -->
       <div class="panel">
-        <div class="panel-header">
-          <div class="panel-title">Revenue — Last 7 Days</div>
-        </div>
-        <div class="panel-body">
-          <div class="chart-container" id="revenue-chart"></div>
-        </div>
+        <div class="panel-header"><div class="panel-title">Revenue — Last 7 Days</div></div>
+        <div class="panel-body"><div class="chart-container" id="revenue-chart"></div></div>
       </div>
-
-      <!-- Top Products -->
       <div class="panel">
-        <div class="panel-header">
-          <div class="panel-title">Top Products</div>
-        </div>
+        <div class="panel-header"><div class="panel-title">Top Products</div></div>
         <div class="panel-body" style="padding:0">
           <table class="admin-table">
-            <thead>
-              <tr><th>Product</th><th>Qty Sold</th><th>Revenue</th></tr>
-            </thead>
+            <thead><tr><th>Product</th><th>Qty</th><th>Revenue</th></tr></thead>
             <tbody id="top-products-body"></tbody>
           </table>
-          ${analytics.topProducts.length === 0 ? '<div style="padding:2rem;text-align:center;color:var(--smoke)">No sales yet</div>' : ''}
+          ${(analytics.topProducts||[]).length===0?'<div style="padding:2rem;text-align:center;color:var(--smoke)">No sales yet</div>':''}
         </div>
       </div>
     </div>
 
-    <!-- RECENT ORDERS -->
     <div class="panel">
       <div class="panel-header">
         <div class="panel-title">Recent Orders</div>
@@ -171,54 +160,62 @@ async function renderDashboard() {
       </div>
       <div style="overflow-x:auto">
         <table class="admin-table">
-          <thead>
-            <tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th>Action</th></tr>
-          </thead>
+          <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
           <tbody id="recent-orders-body"></tbody>
         </table>
-        ${analytics.recentOrders.length === 0 ? '<div style="padding:2rem;text-align:center;color:var(--smoke)">No orders yet — share your store!</div>' : ''}
+        ${(analytics.recentOrders||[]).length===0?'<div style="padding:2rem;text-align:center;color:var(--smoke)">No orders yet — share your store!</div>':''}
       </div>
     </div>
   `;
 
-  // Render chart
-  const maxRevenue = Math.max(...analytics.revenueByDay.map(d => d.revenue), 1);
-  document.getElementById('revenue-chart').innerHTML = analytics.revenueByDay.map(d => `
-    <div class="chart-bar-wrap">
-      <div class="chart-bar" style="height:${Math.max(4, (d.revenue / maxRevenue) * 160)}px">
-        ${d.revenue > 0 ? `<div class="chart-bar-val">৳${d.revenue}</div>` : ''}
-      </div>
-      <div class="chart-label">${d.day}</div>
-    </div>
-  `).join('');
+  // Chart
+  try {
+    const days  = analytics.revenueByDay || [];
+    const maxRev = Math.max(...days.map(d => d.revenue || 0), 1);
+    const chartEl = document.getElementById('revenue-chart');
+    if (chartEl) {
+      chartEl.innerHTML = days.map(d => `
+        <div class="chart-bar-wrap">
+          <div class="chart-bar" style="height:${Math.max(4, ((d.revenue||0)/maxRev)*160)}px">
+            ${d.revenue > 0 ? `<div class="chart-bar-val">৳${d.revenue}</div>` : ''}
+          </div>
+          <div class="chart-label">${d.day}</div>
+        </div>
+      `).join('');
+    }
+  } catch(e) { console.warn('Chart render error:', e); }
 
   // Top products
-  const tpBody = document.getElementById('top-products-body');
-  if (tpBody) {
-    tpBody.innerHTML = analytics.topProducts.map(p => `
-      <tr>
-        <td class="td-bold">${p.name}</td>
-        <td>${p.qty}</td>
-        <td class="td-accent">৳ ${p.revenue.toLocaleString()}</td>
-      </tr>
-    `).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--smoke)">—</td></tr>';
-  }
+  try {
+    const tpBody = document.getElementById('top-products-body');
+    if (tpBody && analytics.topProducts) {
+      tpBody.innerHTML = analytics.topProducts.map(p => `
+        <tr>
+          <td class="td-bold">${p.name}</td>
+          <td>${p.qty}</td>
+          <td class="td-accent">৳ ${(p.revenue||0).toLocaleString()}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--smoke)">—</td></tr>';
+    }
+  } catch(e) {}
 
   // Recent orders
-  const roBody = document.getElementById('recent-orders-body');
-  if (roBody) {
-    roBody.innerHTML = analytics.recentOrders.map(o => `
-      <tr>
-        <td class="td-bold">${o.orderId}</td>
-        <td>${o.customer.name}<br><small style="color:var(--smoke)">${o.customer.phone}</small></td>
-        <td>${o.items.length} item${o.items.length > 1 ? 's' : ''}</td>
-        <td class="td-accent">৳ ${o.total.toLocaleString()}</td>
-        <td>${statusBadge(o.status)}</td>
-        <td style="white-space:nowrap">${fmtDateShort(o.createdAt)}</td>
-        <td><button class="btn btn-secondary btn-sm" onclick="showOrderDetail('${o.orderId}')">View</button></td>
-      </tr>
-    `).join('');
-  }
+  try {
+    const roBody = document.getElementById('recent-orders-body');
+    if (roBody && analytics.recentOrders) {
+      roBody.innerHTML = analytics.recentOrders.map(o => `
+        <tr>
+          <td class="td-bold">${o.orderId}</td>
+          <td>${(o.customer||{}).name||'—'}<br><small style="color:var(--smoke)">${(o.customer||{}).phone||''}</small></td>
+          <td>${(o.items||[]).length} item${(o.items||[]).length>1?'s':''}</td>
+          <td class="td-accent">৳ ${(o.total||0).toLocaleString()}</td>
+          <td>${statusBadge(o.status)}</td>
+          <td style="white-space:nowrap">${fmtDateShort(o.createdAt)}</td>
+          <td><button class="btn btn-secondary btn-sm" onclick="showOrderDetail('${o.orderId}')">View</button></td>
+        </tr>
+      `).join('');
+    }
+  } catch(e) {}
 }
 
 /* ══════════════════════════════════════════════════════

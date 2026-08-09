@@ -4,45 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — HAZE</title>
-  <link rel="stylesheet" href="admin.css?v=9.1">
+  <link rel="stylesheet" href="admin.css?v=10.0">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='85' font-size='80'>⚙️</text></svg>">
   <style>
-    #gate-screen {
-      position:fixed;inset:0;background:#0a0a0f;display:flex;align-items:center;
-      justify-content:center;flex-direction:column;z-index:9999;
-    }
-    .gate-box {
-      background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.25);
-      padding:2.5rem;width:100%;max-width:380px;text-align:center;
-    }
-    .gate-logo {
-      font-size:2.2rem;font-weight:900;letter-spacing:0.25em;color:#e8e0f0;margin-bottom:0.25rem;
-    }
-    .gate-sub {
-      font-size:0.65rem;letter-spacing:0.25em;text-transform:uppercase;color:#6b4fa0;
-      margin-bottom:2rem;font-family:monospace;
-    }
-    .gate-box input {
-      width:100%;padding:0.8rem 1rem;background:rgba(107,79,160,0.12);
-      border:1px solid rgba(107,79,160,0.3);color:#e8e0f0;font-size:0.95rem;
-      margin-bottom:0.75rem;box-sizing:border-box;outline:none;border-radius:3px;
-    }
-    .gate-box input:focus { border-color:#8b5cf6; }
-    .gate-box button {
-      width:100%;padding:0.9rem;background:#8b5cf6;color:#fff;border:none;
-      font-size:0.8rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;
-      cursor:pointer;transition:background 0.2s;border-radius:3px;margin-top:0.25rem;
-    }
-    .gate-box button:hover { background:#7c3aed; }
-    .gate-box button:disabled { opacity:0.5;cursor:not-allowed; }
-    #gate-error {
-      margin-top:0.8rem;font-size:0.8rem;color:#f87171;min-height:1.2em;
-    }
+    #gate-screen{position:fixed;inset:0;background:#0a0a0f;display:flex;align-items:center;justify-content:center;z-index:9999}
+    .gate-box{background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.25);padding:2.5rem;width:100%;max-width:380px;text-align:center}
+    .gate-logo{font-size:2.2rem;font-weight:900;letter-spacing:.25em;color:#e8e0f0;margin-bottom:.25rem}
+    .gate-sub{font-size:.65rem;letter-spacing:.25em;text-transform:uppercase;color:#6b4fa0;margin-bottom:2rem;font-family:monospace}
+    .gate-box input{width:100%;padding:.8rem 1rem;background:rgba(107,79,160,.12);border:1px solid rgba(107,79,160,.3);color:#e8e0f0;font-size:.95rem;margin-bottom:.75rem;box-sizing:border-box;outline:none;border-radius:3px}
+    .gate-box input:focus{border-color:#8b5cf6}
+    .gate-box button{width:100%;padding:.9rem;background:#8b5cf6;color:#fff;border:none;font-size:.8rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;border-radius:3px;margin-top:.25rem}
+    .gate-box button:hover{background:#7c3aed}
+    .gate-box button:disabled{opacity:.5;cursor:not-allowed}
+    #gate-error{margin-top:.8rem;font-size:.8rem;color:#f87171;min-height:1.2em}
   </style>
 </head>
 <body>
 
-<!-- ── GATE SCREEN ─────────────────────────────────────── -->
+<!-- GATE SCREEN -->
 <div id="gate-screen">
   <div class="gate-box">
     <div class="gate-logo">HAZE</div>
@@ -54,158 +33,121 @@
   </div>
 </div>
 
-<!-- ── ADMIN APP ───────────────────────────────────────── -->
+<!-- ADMIN APP -->
 <div id="admin-app" style="display:none">
   <div class="admin-layout">
     <aside class="admin-sidebar">
-      <div class="sidebar-logo">HAZE<span>Admin Panel</span></div>
+      <div class="sidebar-logo">HAZE<span>Admin</span></div>
       <nav class="sidebar-nav">
         <div class="sidebar-section-label">Main</div>
-        <div class="sidebar-link active" data-page="dashboard">
-          <span class="link-icon">📊</span> Dashboard
-        </div>
+        <div class="sidebar-link active" data-page="dashboard"><span class="link-icon">📊</span> Dashboard</div>
         <div class="sidebar-section-label">Store</div>
-        <div class="sidebar-link" data-page="orders">
-          <span class="link-icon">📦</span> Orders
-          <span id="sidebar-pending-count" style="margin-left:auto;background:var(--accent);color:white;border-radius:10px;padding:0.1rem 0.5rem;font-size:0.65rem;display:none"></span>
-        </div>
-        <div class="sidebar-link" data-page="products">
-          <span class="link-icon">👕</span> Products
-        </div>
+        <div class="sidebar-link" data-page="orders"><span class="link-icon">📦</span> Orders<span id="sidebar-pending-count" style="margin-left:auto;background:var(--accent);color:white;border-radius:10px;padding:.1rem .5rem;font-size:.65rem;display:none"></span></div>
+        <div class="sidebar-link" data-page="products"><span class="link-icon">👕</span> Products</div>
         <div class="sidebar-section-label">More</div>
-        <div class="sidebar-link" data-page="coupons">
-          <span class="link-icon">🏷️</span> Coupons
-        </div>
-        <div class="sidebar-link" data-page="settings">
-          <span class="link-icon">⚙️</span> Settings
-        </div>
-        <div class="sidebar-link" onclick="window.open('index.html','_blank')">
-          <span class="link-icon">🌐</span> View Store
-        </div>
+        <div class="sidebar-link" data-page="coupons"><span class="link-icon">🏷️</span> Coupons</div>
+        <div class="sidebar-link" data-page="settings"><span class="link-icon">⚙️</span> Settings</div>
+        <div class="sidebar-link" onclick="window.open('index.html','_blank')"><span class="link-icon">🌐</span> View Store</div>
       </nav>
       <div class="sidebar-footer">
-        <div class="sidebar-store-info" id="sidebar-store-info"></div>
+        <div class="sidebar-store-info" id="sidebar-store-info">HAZE Admin</div>
         <button class="sidebar-logout" id="logout-btn">Logout</button>
       </div>
     </aside>
     <main class="admin-main">
       <div class="admin-header">
         <div class="admin-header-title" id="page-title">Dashboard</div>
-        <div class="admin-header-actions">
-          <span style="font-size:0.8rem;color:var(--ash)" id="header-time"></span>
-        </div>
+        <div class="admin-header-actions"><span style="font-size:.8rem;color:var(--ash)" id="header-time"></span></div>
       </div>
-      <div class="admin-content" id="admin-content">
-        <div style="padding:3rem;text-align:center;color:var(--ash)">Loading...</div>
-      </div>
+      <div class="admin-content" id="admin-content"></div>
     </main>
   </div>
 </div>
 
 <div class="admin-toast" id="admin-toast"></div>
 
-<!-- Load scripts: data.js → admin.js → inline auth (order matters!) -->
-<script src="data.js?v=9.1"></script>
-<script src="admin.js?v=9.1"></script>
+<!-- Scripts: data first, then admin functions, then init -->
+<script src="data.js?v=10.0"></script>
+<script src="admin.js?v=10.0"></script>
 <script>
-/* ══════════════════════════════════════════
-   GATE AUTH — runs after admin.js is loaded
-   so navigateTo() is available
-═══════════════════════════════════════════ */
+/* =====================================================
+   ADMIN GATE — Runs AFTER data.js + admin.js are loaded
+   ===================================================== */
 const ADMIN_EM = 'wearhaze.com@gmail.com';
 
 function isLoggedIn() {
   if (localStorage.getItem('haze_admin_auth') === 'true')   return true;
   if (sessionStorage.getItem('haze_admin_auth') === 'true') return true;
   try {
-    const raw = localStorage.getItem('haze_user') || sessionStorage.getItem('haze_user');
-    const u   = raw ? JSON.parse(raw) : null;
-    if (u && (u.role === 'admin' || (u.email || '').toLowerCase() === ADMIN_EM)) return true;
+    const u = JSON.parse(localStorage.getItem('haze_user') || sessionStorage.getItem('haze_user') || 'null');
+    if (u && (u.role === 'admin' || (u.email||'').toLowerCase() === ADMIN_EM)) return true;
   } catch(e) {}
   return false;
 }
-
-function markLoggedIn(userObj) {
-  localStorage.setItem('haze_admin_auth', 'true');
-  sessionStorage.setItem('haze_admin_auth', 'true');
-  if (userObj) {
-    const s = JSON.stringify(userObj);
+function markLoggedIn(user) {
+  localStorage.setItem('haze_admin_auth','true');
+  sessionStorage.setItem('haze_admin_auth','true');
+  if (user) {
+    const s = JSON.stringify(user);
     localStorage.setItem('haze_user', s);
     sessionStorage.setItem('haze_user', s);
   }
 }
-
-async function bootApp() {
-  document.getElementById('gate-screen').style.display = 'none';
-  document.getElementById('admin-app').style.display   = 'block';
-  try {
-    const s = await HazeDB.getSettings();
-    if (s) document.getElementById('sidebar-store-info').textContent = s.storeName || 'HAZE';
-  } catch(e) {}
-  try { await updatePendingBadge(); } catch(e) {}
-  await navigateTo('dashboard');
-}
-
 function doLogout() {
-  ['haze_admin_auth','haze_user'].forEach(k => {
-    localStorage.removeItem(k);
-    sessionStorage.removeItem(k);
-  });
+  ['haze_admin_auth','haze_user'].forEach(k => { localStorage.removeItem(k); sessionStorage.removeItem(k); });
   document.getElementById('admin-app').style.display   = 'none';
   document.getElementById('gate-screen').style.display = 'flex';
   document.getElementById('gate-pass').value  = '';
   document.getElementById('gate-email').value = '';
   document.getElementById('gate-error').textContent = '';
 }
+async function bootApp() {
+  document.getElementById('gate-screen').style.display = 'none';
+  document.getElementById('admin-app').style.display   = 'block';
 
-// ── On load: auto-login if already authenticated ──
-window.addEventListener('load', () => {
-  if (isLoggedIn()) { bootApp(); return; }
-  document.getElementById('gate-email').focus();
+  // Start dashboard FIRST — don't wait for settings/badge
+  navigateTo('dashboard');
+
+  // Load settings in background (non-blocking)
+  HazeDB.getSettings().then(s => {
+    if (s && s.storeName) document.getElementById('sidebar-store-info').textContent = s.storeName;
+  }).catch(() => {});
+
+  updatePendingBadge().catch(() => {});
+}
+
+// ── Wire up sidebar nav links ──
+document.querySelectorAll('.sidebar-link[data-page]').forEach(link => {
+  link.addEventListener('click', () => navigateTo(link.dataset.page));
 });
+document.getElementById('logout-btn').addEventListener('click', doLogout);
 
-// ── Gate button click ──
+// ── Gate login ──
 document.getElementById('gate-btn').addEventListener('click', async () => {
   const email  = (document.getElementById('gate-email').value || '').trim().toLowerCase();
   const pass   = (document.getElementById('gate-pass').value  || '').trim();
   const errEl  = document.getElementById('gate-error');
   const btn    = document.getElementById('gate-btn');
-
   errEl.textContent = '';
   if (!email || !pass) { errEl.textContent = 'Email ও Password দিন।'; return; }
-
-  btn.disabled   = true;
-  btn.textContent = 'Logging in...';
-
+  btn.disabled = true; btn.textContent = 'Logging in...';
   try {
     const res = await HazeDB.loginUser(email, pass);
-    if (res && res.ok) {
-      markLoggedIn(res.user);
-      await bootApp();
-      return;
-    }
-    // Admin email fallback — always grant even if DB fails
-    if (email === ADMIN_EM || email.startsWith('admin')) {
-      markLoggedIn({ name: 'Admin', email, role: 'admin' });
-      await bootApp();
-      return;
-    }
-    errEl.textContent = (res && res.error) || 'Login failed. Try again.';
+    if (res && res.ok) { markLoggedIn(res.user); await bootApp(); return; }
+    // Admin email — always grant
+    if (email === ADMIN_EM || email.startsWith('admin')) { markLoggedIn({name:'Admin',email,role:'admin'}); await bootApp(); return; }
+    errEl.textContent = (res && res.error) || 'Login failed.';
   } catch(e) {
-    if (email === ADMIN_EM || email.startsWith('admin')) {
-      markLoggedIn({ name: 'Admin', email, role: 'admin' });
-      await bootApp();
-      return;
-    }
-    errEl.textContent = 'Network error. Check your connection.';
+    if (email === ADMIN_EM || email.startsWith('admin')) { markLoggedIn({name:'Admin',email,role:'admin'}); await bootApp(); return; }
+    errEl.textContent = 'Network error.';
   }
-  btn.disabled    = false;
-  btn.textContent = 'Login';
+  btn.disabled = false; btn.textContent = 'Login';
 });
+document.getElementById('gate-pass').addEventListener('keydown',  e => { if (e.key==='Enter') document.getElementById('gate-btn').click(); });
+document.getElementById('gate-email').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('gate-pass').focus(); });
 
-document.getElementById('gate-pass').addEventListener('keydown',  e => { if (e.key === 'Enter') document.getElementById('gate-btn').click(); });
-document.getElementById('gate-email').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('gate-pass').focus(); });
-document.getElementById('logout-btn').addEventListener('click', doLogout);
+// ── Auto-login if already authenticated ──
+if (isLoggedIn()) { bootApp(); } else { document.getElementById('gate-email').focus(); }
 </script>
 </body>
 </html>
