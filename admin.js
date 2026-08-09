@@ -39,14 +39,23 @@ function checkAuth() {
 }
 
 document.getElementById('login-btn').addEventListener('click', async () => {
-  const pass = document.getElementById('login-pass').value;
-  // Use HazeDB.loginUser with the admin email
+  const pass = document.getElementById('login-pass').value.trim();
+  const errEl = document.getElementById('login-error');
+  
+  if (!pass) {
+    errEl.textContent = 'Password লিখুন।';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
   const res = await HazeDB.loginUser(HazeDB.ADMIN_EMAIL, pass);
-  if (res && res.ok && HazeDB.isAdminLoggedIn()) {
+  if (res && res.ok) {
+    sessionStorage.setItem('haze_admin_auth', 'true');
     showApp();
   } else {
-    document.getElementById('login-error').style.display = 'block';
-    setTimeout(() => document.getElementById('login-error').style.display = 'none', 3000);
+    errEl.textContent = (res && res.error) ? res.error : 'Incorrect password. Try again.';
+    errEl.style.display = 'block';
   }
 });
 document.getElementById('login-pass').addEventListener('keydown', e => {
