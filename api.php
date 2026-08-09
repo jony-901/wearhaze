@@ -15,13 +15,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // ==========================================
-// DATABASE CONFIGURATION
-// TODO: Update these with Hostinger credentials
+// DATABASE CONFIGURATION — Hostinger
 // ==========================================
 $db_host = 'localhost';
-$db_name = 'haze_database'; // Hostinger DB Name
-$db_user = 'root';          // Hostinger DB User
-$db_pass = '';              // Hostinger DB Password
+$db_name = 'wearhaze_db'; // Hostinger DB Name
+$db_user = 'wearhaze_user'; // Hostinger DB User
+$db_pass = 'WearHazeDetaBasePass1'; // Hostinger DB Password
 
 try {
     $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8mb4", $db_user, $db_pass);
@@ -36,6 +35,70 @@ try {
 // Helper to get POST/PUT JSON payload
 $inputData = json_decode(file_get_contents('php://input'), true) ?: [];
 $action = $_GET['action'] ?? $inputData['action'] ?? '';
+
+// ==========================================
+// ONE-TIME SETUP — Creates all DB tables
+// Access: https://yourdomain.com/api.php?action=setup
+// ==========================================
+if ($action === 'setup') {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS users (
+            id VARCHAR(64) PRIMARY KEY,
+            name VARCHAR(200) NOT NULL,
+            email VARCHAR(200) NOT NULL UNIQUE,
+            password VARCHAR(255) NOT NULL,
+            role VARCHAR(20) DEFAULT 'customer',
+            created_at BIGINT DEFAULT 0
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS products (
+            id VARCHAR(64) PRIMARY KEY,
+            name VARCHAR(200) NOT NULL,
+            description TEXT,
+            price INT NOT NULL DEFAULT 0,
+            price_usd INT DEFAULT 0,
+            image VARCHAR(500),
+            category VARCHAR(50) DEFAULT 'tops',
+            tag VARCHAR(50),
+            sizes JSON,
+            stock INT DEFAULT 0,
+            featured TINYINT(1) DEFAULT 0,
+            created_at BIGINT DEFAULT 0
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS orders (
+            id VARCHAR(64) PRIMARY KEY,
+            order_id VARCHAR(20) NOT NULL UNIQUE,
+            customer_json LONGTEXT,
+            items_json LONGTEXT,
+            subtotal INT DEFAULT 0,
+            shipping INT DEFAULT 80,
+            total INT DEFAULT 0,
+            payment_method VARCHAR(50),
+            status VARCHAR(30) DEFAULT 'pending',
+            status_history_json LONGTEXT,
+            created_at BIGINT DEFAULT 0
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS settings (
+            setting_key VARCHAR(100) PRIMARY KEY,
+            setting_value TEXT
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        INSERT IGNORE INTO settings (setting_key, setting_value) VALUES
+            ('storeName', 'HAZE'),
+            ('tagline', 'Wear the Haze'),
+            ('email', 'wearhaze.com@gmail.com'),
+            ('phone', ''),
+            ('bkash', ''),
+            ('nagad', ''),
+            ('instagram', ''),
+            ('facebook', ''),
+            ('tiktok', '');
+    ");
+    echo json_encode(['ok' => true, 'message' => 'All database tables created successfully! You can now delete this setup endpoint or ignore it.']);
+    exit();
+}
 
 // Routing
 try {
