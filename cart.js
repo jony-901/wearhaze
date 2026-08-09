@@ -5,9 +5,9 @@
 const HazeCart = (() => {
 
   /* ── RENDER CART DRAWER ─────────────────────────────── */
-  function renderDrawer() {
-    const items = HazeDB.getCartItems();
-    const total = HazeDB.getCartTotal();
+  async function renderDrawer() {
+    const items = await HazeDB.getCartItems();
+    const total = await HazeDB.getCartTotal();
     const count = HazeDB.getCartCount();
 
     // Update badge
@@ -57,25 +57,25 @@ const HazeCart = (() => {
   }
 
   /* ── ADD TO CART ────────────────────────────────────── */
-  function add(productId, size) {
+  async function add(productId, size) {
     if (!size) { showSizeAlert(); return; }
     HazeDB.addToCart(productId, size, 1);
-    renderDrawer();
+    await renderDrawer();
     openDrawer();
     showAddedToast();
   }
 
   /* ── REMOVE ─────────────────────────────────────────── */
-  function remove(productId, size) {
+  async function remove(productId, size) {
     HazeDB.removeFromCart(productId, size);
-    renderDrawer();
+    await renderDrawer();
   }
 
   /* ── CHANGE QTY ─────────────────────────────────────── */
-  function changeQty(productId, size, newQty) {
-    if (newQty <= 0) { remove(productId, size); return; }
+  async function changeQty(productId, size, newQty) {
+    if (newQty <= 0) { await remove(productId, size); return; }
     HazeDB.updateCartQty(productId, size, newQty);
-    renderDrawer();
+    await renderDrawer();
   }
 
   /* ── OPEN / CLOSE DRAWER ────────────────────────────── */

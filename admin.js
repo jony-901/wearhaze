@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════
-   HAZE — admin.js  |  Full Admin Panel Logic
+   HAZE — admin.js  |  Full Admin Panel Logic (Async)
    ═══════════════════════════════════════════════════════ */
 
 /* ── UTILS ────────────────────────────────────────────── */
@@ -38,9 +38,11 @@ function checkAuth() {
   if (HazeDB.isAdminLoggedIn()) showApp();
 }
 
-document.getElementById('login-btn').addEventListener('click', () => {
+document.getElementById('login-btn').addEventListener('click', async () => {
   const pass = document.getElementById('login-pass').value;
-  if (HazeDB.adminLogin(pass)) {
+  // Use HazeDB.loginUser with the admin email
+  const res = await HazeDB.loginUser(HazeDB.ADMIN_EMAIL, pass);
+  if (res && res.ok && HazeDB.isAdminLoggedIn()) {
     showApp();
   } else {
     document.getElementById('login-error').style.display = 'block';
@@ -58,17 +60,18 @@ document.getElementById('logout-btn').addEventListener('click', () => {
   document.getElementById('login-pass').value = '';
 });
 
-function showApp() {
+async function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('admin-app').style.display = 'block';
-  const settings = HazeDB.getSettings();
-  document.getElementById('sidebar-store-info').textContent = settings.storeName + '\n' + settings.email;
-  updatePendingBadge();
+  const settings = await HazeDB.getSettings();
+  document.getElementById('sidebar-store-info').textContent = (settings.storeName || 'HAZE') + '\n' + (settings.email || '');
+  await updatePendingBadge();
   navigateTo('dashboard');
 }
 
-function updatePendingBadge() {
-  const pending = HazeDB.getOrders().filter(o => o.status === 'pending').length;
+async function updatePendingBadge() {
+  const orders = await HazeDB.getOrders();
+  const pending = orders.filter(o => o.status === 'pending').length;
   const badge = document.getElementById('sidebar-pending-count');
   badge.textContent = pending;
   badge.style.display = pending > 0 ? 'inline' : 'none';
@@ -79,7 +82,7 @@ document.querySelectorAll('.sidebar-link[data-page]').forEach(link => {
   link.addEventListener('click', () => navigateTo(link.dataset.page));
 });
 
-function navigateTo(page) {
+async function navigateTo(page) {
   document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
   const activeLink = document.querySelector(`.sidebar-link[data-page="${page}"]`);
   if (activeLink) activeLink.classList.add('active');
@@ -88,19 +91,19 @@ function navigateTo(page) {
   document.getElementById('page-title').textContent = titles[page] || page;
 
   const content = document.getElementById('admin-content');
-  content.innerHTML = '';
+  content.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--ash)">Loading...</div>';
 
-  if (page === 'dashboard') renderDashboard();
-  else if (page === 'orders') renderOrders();
-  else if (page === 'products') renderProducts();
-  else if (page === 'settings') renderSettings();
+  if (page === 'dashboard') await renderDashboard();
+  else if (page === 'orders') await renderOrders();
+  else if (page === 'products') await renderProducts();
+  else if (page === 'settings') await renderSettings();
 }
 
 /* ══════════════════════════════════════════════════════
    DASHBOARD
 ══════════════════════════════════════════════════════ */
-function renderDashboard() {
-  const analytics = HazeDB.getAnalytics();
+async function renderDashboard() {
+  const analytics = await HazeDB.getAnalytics();
   const content = document.getElementById('admin-content');
 
   content.innerHTML = `
@@ -223,9 +226,9 @@ function renderDashboard() {
 /* ══════════════════════════════════════════════════════
    ORDERS
 ══════════════════════════════════════════════════════ */
-function renderOrders(filterStatus = 'all', searchQuery = '') {
+async function renderOrders(filterStatus = 'all', searchQuery = '') {
   const content = document.getElementById('admin-content');
-  let orders = HazeDB.getOrders();
+  let orders = await HazeDB.getOrders();
 
   if (filterStatus !== 'all') orders = orders.filter(o => o.status === filterStatus);
   if (searchQuery) {
@@ -316,22 +319,22 @@ function renderOrders(filterStatus = 'all', searchQuery = '') {
   }
 }
 
-function updateStatus(orderId, status) {
-  HazeDB.updateOrderStatus(orderId, status, 'Status updated by admin');
-  updatePendingBadge();
+async function updateStatus(orderId, status) {
+  await HazeDB.updateOrderStatus(orderId, status, 'Status updated by admin');
+  await updatePendingBadge();
   toast(`Order ${orderId} → ${status}`);
 }
 
-function deleteOrder(orderId) {
+async function deleteOrder(orderId) {
   if (!confirmDel(`Delete order ${orderId}?`)) return;
-  HazeDB.deleteOrder(orderId);
+  await HazeDB.deleteOrder(orderId);
   toast('Order deleted', 'error');
-  updatePendingBadge();
-  renderOrders();
+  await updatePendingBadge();
+  await renderOrders();
 }
 
-function showOrderDetail(orderId) {
-  const order = HazeDB.getOrder(orderId);
+async function showOrderDetail(orderId) {
+  const order = await HazeDB.getOrder(orderId);
   if (!order) return;
 
   const overlay = document.createElement('div');
@@ -405,8 +408,8 @@ function showOrderDetail(orderId) {
 /* ══════════════════════════════════════════════════════
    PRODUCTS
 ══════════════════════════════════════════════════════ */
-function renderProducts() {
-  const products = HazeDB.getProducts();
+async function renderProducts() {
+  const products = await HazeDB.getProducts();
   const content = document.getElementById('admin-content');
 
   content.innerHTML = `
@@ -456,8 +459,8 @@ function renderProducts() {
   }
 }
 
-function showProductModal(productId = null) {
-  const product = productId ? HazeDB.getProduct(productId) : null;
+async function showProductModal(productId = null) {
+  const product = productId ? await HazeDB.getProduct(productId) : null;
   const isEdit = !!product;
   const p = product || { id:'', name:'', description:'', price:'', priceUSD:'', image:'', category:'tops', tag:'', sizes:'S,M,L,XL', stock:'', featured:false };
 
@@ -552,7 +555,7 @@ function showProductModal(productId = null) {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
 
-function saveProduct(productId) {
+async function saveProduct(productId) {
   const name = document.getElementById('pf-name').value.trim();
   const price = parseInt(document.getElementById('pf-price').value);
   if (!name || !price) { toast('Name and price are required', 'error'); return; }
@@ -571,28 +574,28 @@ function saveProduct(productId) {
   };
 
   if (productId) {
-    HazeDB.updateProduct(productId, data);
+    await HazeDB.updateProduct(productId, data);
     toast('Product updated!');
   } else {
-    HazeDB.addProduct({ ...data, id: 'haze-' + Date.now() });
+    await HazeDB.addProduct({ ...data, id: 'haze-' + Date.now() });
     toast('Product added!');
   }
   document.querySelector('.admin-modal-overlay').remove();
-  renderProducts();
+  await renderProducts();
 }
 
-function deleteProduct(id) {
+async function deleteProduct(id) {
   if (!confirmDel('Delete this product?')) return;
-  HazeDB.deleteProduct(id);
+  await HazeDB.deleteProduct(id);
   toast('Product deleted', 'error');
-  renderProducts();
+  await renderProducts();
 }
 
 /* ══════════════════════════════════════════════════════
    SETTINGS
 ══════════════════════════════════════════════════════ */
-function renderSettings() {
-  const s = HazeDB.getSettings();
+async function renderSettings() {
+  const s = await HazeDB.getSettings();
   const content = document.getElementById('admin-content');
 
   content.innerHTML = `
@@ -603,10 +606,10 @@ function renderSettings() {
         <div class="panel-header"><div class="panel-title">Store Information</div></div>
         <div class="panel-body">
           <div class="admin-form">
-            <div class="form-field"><label>Store Name</label><input type="text" id="s-name" value="${s.storeName}"></div>
-            <div class="form-field"><label>Tagline</label><input type="text" id="s-tagline" value="${s.tagline}"></div>
-            <div class="form-field"><label>Email</label><input type="email" id="s-email" value="${s.email}"></div>
-            <div class="form-field"><label>Phone</label><input type="text" id="s-phone" value="${s.phone}"></div>
+            <div class="form-field"><label>Store Name</label><input type="text" id="s-name" value="${s.storeName || ''}"></div>
+            <div class="form-field"><label>Tagline</label><input type="text" id="s-tagline" value="${s.tagline || ''}"></div>
+            <div class="form-field"><label>Email</label><input type="email" id="s-email" value="${s.email || ''}"></div>
+            <div class="form-field"><label>Phone</label><input type="text" id="s-phone" value="${s.phone || ''}"></div>
             <button class="btn btn-primary" onclick="saveStoreSettings()">Save Store Info</button>
           </div>
         </div>
@@ -617,8 +620,8 @@ function renderSettings() {
         <div class="panel-header"><div class="panel-title">Payment Numbers</div></div>
         <div class="panel-body">
           <div class="admin-form">
-            <div class="form-field"><label>bKash Number</label><input type="text" id="s-bkash" value="${s.bkash}" placeholder="01XXXXXXXXX"></div>
-            <div class="form-field"><label>Nagad Number</label><input type="text" id="s-nagad" value="${s.nagad}" placeholder="01XXXXXXXXX"></div>
+            <div class="form-field"><label>bKash Number</label><input type="text" id="s-bkash" value="${s.bkash || ''}" placeholder="01XXXXXXXXX"></div>
+            <div class="form-field"><label>Nagad Number</label><input type="text" id="s-nagad" value="${s.nagad || ''}" placeholder="01XXXXXXXXX"></div>
             <button class="btn btn-primary" onclick="savePaymentSettings()">Save Payment Info</button>
           </div>
         </div>
@@ -629,52 +632,20 @@ function renderSettings() {
         <div class="panel-header"><div class="panel-title">Social Media</div></div>
         <div class="panel-body">
           <div class="admin-form">
-            <div class="form-field"><label>Instagram URL</label><input type="url" id="s-ig" value="${s.instagram}"></div>
-            <div class="form-field"><label>Facebook URL</label><input type="url" id="s-fb" value="${s.facebook}"></div>
-            <div class="form-field"><label>TikTok URL</label><input type="url" id="s-tt" value="${s.tiktok}"></div>
+            <div class="form-field"><label>Instagram URL</label><input type="url" id="s-ig" value="${s.instagram || ''}"></div>
+            <div class="form-field"><label>Facebook URL</label><input type="url" id="s-fb" value="${s.facebook || ''}"></div>
+            <div class="form-field"><label>TikTok URL</label><input type="url" id="s-tt" value="${s.tiktok || ''}"></div>
             <button class="btn btn-primary" onclick="saveSocialSettings()">Save Social Links</button>
           </div>
         </div>
       </div>
 
-      <!-- Password -->
-      <div class="panel">
-        <div class="panel-header"><div class="panel-title">Change Password</div></div>
-        <div class="panel-body">
-          <div class="admin-form">
-            <div class="form-field"><label>Current Password</label><input type="password" id="s-old-pass" placeholder="Current password"></div>
-            <div class="form-field"><label>New Password</label><input type="password" id="s-new-pass" placeholder="New password"></div>
-            <div class="form-field"><label>Confirm New Password</label><input type="password" id="s-confirm-pass" placeholder="Confirm new password"></div>
-            <button class="btn btn-primary" onclick="changePassword()">Change Password</button>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Danger Zone -->
-    <div class="panel" style="margin-top:1.5rem;border-color:rgba(239,68,68,0.2)">
-      <div class="panel-header" style="border-bottom-color:rgba(239,68,68,0.1)">
-        <div class="panel-title" style="color:#f87171">Danger Zone</div>
-      </div>
-      <div class="panel-body" style="display:flex;gap:1rem;flex-wrap:wrap">
-        <div>
-          <div style="font-weight:600;margin-bottom:0.3rem">Reset All Orders</div>
-          <div style="font-size:0.8rem;color:var(--ash);margin-bottom:0.8rem">Delete all order records permanently.</div>
-          <button class="btn btn-danger" onclick="resetOrders()">Reset Orders</button>
-        </div>
-        <div>
-          <div style="font-weight:600;margin-bottom:0.3rem">Reset All Products</div>
-          <div style="font-size:0.8rem;color:var(--ash);margin-bottom:0.8rem">Restore default product list.</div>
-          <button class="btn btn-danger" onclick="resetProducts()">Reset Products</button>
-        </div>
-      </div>
     </div>
   `;
 }
 
-function saveStoreSettings() {
-  HazeDB.updateSettings({
+async function saveStoreSettings() {
+  await HazeDB.updateSettings({
     storeName: document.getElementById('s-name').value,
     tagline: document.getElementById('s-tagline').value,
     email: document.getElementById('s-email').value,
@@ -683,41 +654,13 @@ function saveStoreSettings() {
   document.getElementById('sidebar-store-info').textContent = document.getElementById('s-name').value + '\n' + document.getElementById('s-email').value;
   toast('Store info saved!');
 }
-function savePaymentSettings() {
-  HazeDB.updateSettings({ bkash: document.getElementById('s-bkash').value, nagad: document.getElementById('s-nagad').value });
+async function savePaymentSettings() {
+  await HazeDB.updateSettings({ bkash: document.getElementById('s-bkash').value, nagad: document.getElementById('s-nagad').value });
   toast('Payment info saved!');
 }
-function saveSocialSettings() {
-  HazeDB.updateSettings({ instagram: document.getElementById('s-ig').value, facebook: document.getElementById('s-fb').value, tiktok: document.getElementById('s-tt').value });
+async function saveSocialSettings() {
+  await HazeDB.updateSettings({ instagram: document.getElementById('s-ig').value, facebook: document.getElementById('s-fb').value, tiktok: document.getElementById('s-tt').value });
   toast('Social links saved!');
-}
-function changePassword() {
-  const oldP = document.getElementById('s-old-pass').value;
-  const newP = document.getElementById('s-new-pass').value;
-  const confP = document.getElementById('s-confirm-pass').value;
-  if (!oldP || !newP) { toast('Fill all password fields', 'error'); return; }
-  if (newP !== confP) { toast('Passwords do not match', 'error'); return; }
-  if (newP.length < 6) { toast('Password must be at least 6 characters', 'error'); return; }
-  if (HazeDB.changeAdminPassword(oldP, newP)) {
-    toast('Password changed! Please login again.');
-    setTimeout(() => { HazeDB.adminLogout(); location.reload(); }, 2000);
-  } else {
-    toast('Incorrect current password', 'error');
-  }
-}
-function resetOrders() {
-  if (!confirmDel('Delete ALL orders? This cannot be undone!')) return;
-  localStorage.setItem('haze_orders', JSON.stringify([]));
-  updatePendingBadge();
-  toast('All orders deleted', 'error');
-  renderSettings();
-}
-function resetProducts() {
-  if (!confirmDel('Reset products to defaults?')) return;
-  localStorage.removeItem('haze_products');
-  HazeDB.init();
-  toast('Products reset to defaults');
-  renderSettings();
 }
 
 /* ── BOOT ─────────────────────────────────────────────── */

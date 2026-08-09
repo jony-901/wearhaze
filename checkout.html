@@ -180,8 +180,8 @@
 
   <script src="data.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const settings = HazeDB.getSettings();
+    document.addEventListener('DOMContentLoaded', async () => {
+      const settings = await HazeDB.getSettings();
 
       // Fill payment numbers
       const bkNum = document.getElementById('bkash-num');
@@ -190,8 +190,8 @@
       if (ngNum) ngNum.textContent = settings.nagad || '01XXXXXXXXX';
 
       // Render order summary
-      const items = HazeDB.getCartItems();
-      const subtotal = HazeDB.getCartTotal();
+      const items = await HazeDB.getCartItems();
+      const subtotal = await HazeDB.getCartTotal();
       const sumItems = document.getElementById('summary-items');
 
       if (items.length === 0) {
@@ -242,7 +242,7 @@
       document.getElementById('place-order-btn').addEventListener('click', placeOrder);
     });
 
-    function placeOrder() {
+    async function placeOrder() {
       const name = document.getElementById('co-name').value.trim();
       const phone = document.getElementById('co-phone').value.trim();
       const address = document.getElementById('co-address').value.trim();
@@ -265,27 +265,25 @@
       btn.disabled = true;
       document.getElementById('place-order-text').textContent = 'Placing Order...';
 
-      setTimeout(() => {
-        const order = HazeDB.createOrder({
-          name, phone,
-          email: document.getElementById('co-email').value.trim(),
-          address,
-          city,
-          district,
-          zip: document.getElementById('co-zip').value.trim(),
-          notes,
-          trxid: trxid || ''
-        }, payment);
+      const order = await HazeDB.createOrder({
+        name, phone,
+        email: document.getElementById('co-email').value.trim(),
+        address,
+        city,
+        district,
+        zip: document.getElementById('co-zip').value.trim(),
+        notes,
+        trxid: trxid || ''
+      }, payment);
 
-        if (order) {
-          document.getElementById('modal-order-id').textContent = order.orderId;
-          document.getElementById('success-modal').style.display = 'flex';
-        } else {
-          alert('Something went wrong. Please try again.');
-          btn.disabled = false;
-          document.getElementById('place-order-text').textContent = 'Place Order';
-        }
-      }, 1200);
+      if (order) {
+        document.getElementById('modal-order-id').textContent = order.orderId;
+        document.getElementById('success-modal').style.display = 'flex';
+      } else {
+        alert('Something went wrong. Please try again.');
+        btn.disabled = false;
+        document.getElementById('place-order-text').textContent = 'Place Order';
+      }
     }
   </script>
 </body>

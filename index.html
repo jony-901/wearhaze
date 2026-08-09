@@ -465,8 +465,8 @@
 
     // Quick View Logic
     let currentQVProduct = null;
-    function openQuickView(productId) {
-      const product = HazeDB.getProduct(productId);
+    async function openQuickView(productId) {
+      const product = await HazeDB.getProduct(productId);
       if (!product) return;
       currentQVProduct = product;
       document.getElementById('qv-img').src = product.image;

@@ -355,7 +355,7 @@
       document.getElementById('signup-admin-note').classList.toggle('show', isAdmin);
     });
 
-    function handleSignIn(e) {
+    async function handleSignIn(e) {
       e.preventDefault();
       clearErrors();
       const email = document.getElementById('si-email').value;
@@ -364,26 +364,24 @@
 
       btn.disabled = true; btn.textContent = 'Signing in...';
 
-      setTimeout(() => {
-        const result = HazeDB.loginUser(email, pass);
-        if (result.ok) {
-          showSuccess('signin-success', '✓ Signed in! Redirecting...');
-          setTimeout(() => {
-            const redirect = new URLSearchParams(window.location.search).get('redirect');
-            if (result.user.role === 'admin') {
-              window.location.href = redirect || 'admin.html';
-            } else {
-              window.location.href = redirect || 'index.html';
-            }
-          }, 800);
-        } else {
-          showError('signin-error', result.error);
-          btn.disabled = false; btn.textContent = 'Sign In';
-        }
-      }, 600);
+      const result = await HazeDB.loginUser(email, pass);
+      if (result && result.ok) {
+        showSuccess('signin-success', '✓ Signed in! Redirecting...');
+        setTimeout(() => {
+          const redirect = new URLSearchParams(window.location.search).get('redirect');
+          if (result.user.role === 'admin') {
+            window.location.href = redirect || 'admin.html';
+          } else {
+            window.location.href = redirect || 'index.html';
+          }
+        }, 800);
+      } else {
+        showError('signin-error', result ? result.error : 'Network error');
+        btn.disabled = false; btn.textContent = 'Sign In';
+      }
     }
 
-    function handleSignUp(e) {
+    async function handleSignUp(e) {
       e.preventDefault();
       clearErrors();
       const name = document.getElementById('su-name').value;
@@ -397,22 +395,20 @@
 
       btn.disabled = true; btn.textContent = 'Creating account...';
 
-      setTimeout(() => {
-        const result = HazeDB.registerUser(name, email, pass);
-        if (result.ok) {
-          showSuccess('signup-success', '✓ Account created! Redirecting...');
-          setTimeout(() => {
-            if (result.user.role === 'admin') {
-              window.location.href = 'admin.html';
-            } else {
-              window.location.href = 'index.html';
-            }
-          }, 800);
-        } else {
-          showError('signup-error', result.error);
-          btn.disabled = false; btn.textContent = 'Create Account';
-        }
-      }, 600);
+      const result = await HazeDB.registerUser(name, email, pass);
+      if (result && result.ok) {
+        showSuccess('signup-success', '✓ Account created! Redirecting...');
+        setTimeout(() => {
+          if (result.user.role === 'admin') {
+            window.location.href = 'admin.html';
+          } else {
+            window.location.href = 'index.html';
+          }
+        }, 800);
+      } else {
+        showError('signup-error', result ? result.error : 'Network error');
+        btn.disabled = false; btn.textContent = 'Create Account';
+      }
     }
   </script>
 </body>

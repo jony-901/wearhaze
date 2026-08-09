@@ -249,15 +249,15 @@
       `).join('');
     }
 
-    document.getElementById('track-btn').addEventListener('click', () => {
+    document.getElementById('track-btn').addEventListener('click', async () => {
       const val = document.getElementById('track-input').value.trim();
       if (!val) return;
       let found;
       if (val.toUpperCase().startsWith('HZ-')) {
-        const o = HazeDB.getOrder(val.toUpperCase());
+        const o = await HazeDB.getOrder(val.toUpperCase());
         found = o ? [o] : [];
       } else {
-        found = HazeDB.getOrdersByPhone(val);
+        found = await HazeDB.getOrdersByPhone(val);
       }
       renderOrders(found);
     });
@@ -267,7 +267,7 @@
     });
 
     // INIT PAGE
-    (function initAccountPage() {
+    (async function initAccountPage() {
       const user = HazeDB.getCurrentUser();
       
       // Init Nav
@@ -293,7 +293,7 @@
         document.getElementById('page-desc').textContent = `Welcome back, ${user.name}. Here are your recent orders.`;
         document.getElementById('track-search-box').style.display = 'none';
         
-        const orders = HazeDB.getOrdersByEmail(user.email);
+        const orders = await HazeDB.getOrdersByEmail(user.email);
         
         if (searchOrder) {
           // highlight specific order?
