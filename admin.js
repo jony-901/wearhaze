@@ -87,7 +87,7 @@ async function navigateTo(page) {
   const activeLink = document.querySelector(`.sidebar-link[data-page="${page}"]`);
   if (activeLink) activeLink.classList.add('active');
 
-  const titles = { dashboard:'Dashboard', orders:'Orders', products:'Products', settings:'Settings' };
+  const titles = { dashboard:'Dashboard', orders:'Orders', products:'Products', coupons:'🏷️ Coupons', settings:'Settings' };
   document.getElementById('page-title').textContent = titles[page] || page;
 
   const content = document.getElementById('admin-content');
@@ -96,6 +96,7 @@ async function navigateTo(page) {
   if (page === 'dashboard') await renderDashboard();
   else if (page === 'orders') await renderOrders();
   else if (page === 'products') await renderProducts();
+  else if (page === 'coupons') await renderCoupons();
   else if (page === 'settings') await renderSettings();
 }
 
@@ -720,23 +721,173 @@ async function renderSettings() {
 }
 
 async function saveStoreSettings() {
-  await HazeDB.updateSettings({
-    storeName: document.getElementById('s-name').value,
-    tagline: document.getElementById('s-tagline').value,
-    email: document.getElementById('s-email').value,
-    phone: document.getElementById('s-phone').value
-  });
-  document.getElementById('sidebar-store-info').textContent = document.getElementById('s-name').value + '\n' + document.getElementById('s-email').value;
-  toast('Store info saved!');
+  try {
+    const res = await HazeDB.updateSettings({
+      storeName: document.getElementById('s-name').value.trim(),
+      tagline:   document.getElementById('s-tagline').value.trim(),
+      email:     document.getElementById('s-email').value.trim(),
+      phone:     document.getElementById('s-phone').value.trim()
+    });
+    if (res && res.ok === false) throw new Error(res.error || 'Failed');
+    toast('✓ Store info saved!');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
+
 async function savePaymentSettings() {
-  await HazeDB.updateSettings({ bkash: document.getElementById('s-bkash').value, nagad: document.getElementById('s-nagad').value });
-  toast('Payment info saved!');
+  try {
+    const res = await HazeDB.updateSettings({
+      bkash: document.getElementById('s-bkash').value.trim(),
+      nagad:  document.getElementById('s-nagad').value.trim()
+    });
+    if (res && res.ok === false) throw new Error(res.error || 'Failed');
+    toast('✓ Payment info saved!');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
+
 async function saveSocialSettings() {
-  await HazeDB.updateSettings({ instagram: document.getElementById('s-ig').value, facebook: document.getElementById('s-fb').value, tiktok: document.getElementById('s-tt').value });
-  toast('Social links saved!');
+  try {
+    const res = await HazeDB.updateSettings({
+      instagram: document.getElementById('s-ig').value.trim(),
+      facebook:  document.getElementById('s-fb').value.trim(),
+      tiktok:    document.getElementById('s-tt').value.trim()
+    });
+    if (res && res.ok === false) throw new Error(res.error || 'Failed');
+    toast('✓ Social links saved!');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+/* ══════════════════════════════════════════════════════
+   COUPONS PAGE
+══════════════════════════════════════════════════════ */
+async function renderCoupons() {
+  const content = document.getElementById('admin-content');
+  const coupons = await HazeDB.getCoupons() || [];
+
+  content.innerHTML = `
+    <div class="section-header" style="margin-bottom:1.5rem">
+      <div>
+        <div class="section-title">Coupon Codes</div>
+        <div class="section-sub">${coupons.length} coupon${coupons.length!==1?'s':''} total</div>
+      </div>
+      <button class="btn btn-primary" onclick="showCouponModal()">+ New Coupon</button>
+    </div>
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead><tr>
+          <th>Code</th><th>Discount</th><th>Min Order</th>
+          <th>Used / Max</th><th>Status</th><th>Actions</th>
+        </tr></thead>
+        <tbody>
+          ${coupons.length === 0
+            ? `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--smoke)">No coupons yet. Create your first one!</td></tr>`
+            : coupons.map(c => `
+              <tr>
+                <td><code style="background:rgba(139,92,246,0.12);padding:0.25rem 0.7rem;border-radius:4px;font-size:0.85rem;letter-spacing:0.1em">${c.code}</code></td>
+                <td>${c.discount_type==='percentage' ? c.discount_value+'%' : '৳'+(+c.discount_value).toLocaleString()}</td>
+                <td>${+c.min_order>0 ? '৳'+(+c.min_order).toLocaleString() : '—'}</td>
+                <td>${c.used_count} / ${+c.max_uses>0 ? c.max_uses : '∞'}</td>
+                <td><span class="order-status-badge ${c.is_active ? 'status-processing' : 'status-cancelled'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
+                <td>
+                  <button class="btn btn-secondary btn-sm" onclick="toggleCoupon('${c.id}',${c.is_active?0:1})">${c.is_active?'Disable':'Enable'}</button>
+                  <button class="btn btn-danger btn-sm" style="margin-left:0.5rem" onclick="deleteCoupon('${c.id}')">Delete</button>
+                </td>
+              </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function showCouponModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'admin-modal-overlay';
+  overlay.innerHTML = `
+    <div class="admin-modal" style="max-width:480px">
+      <div class="admin-modal-header">
+        <div class="admin-modal-title">🏷️ New Coupon Code</div>
+        <button class="modal-close" onclick="this.closest('.admin-modal-overlay').remove()">✕</button>
+      </div>
+      <div class="admin-modal-body">
+        <div class="form-field">
+          <label>Coupon Code (e.g. HAZE20)</label>
+          <input type="text" id="cp-code" placeholder="HAZE20"
+            oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+            style="font-family:monospace;letter-spacing:0.15em;font-size:1rem">
+        </div>
+        <div class="admin-form-row">
+          <div class="form-field">
+            <label>Discount Type</label>
+            <select id="cp-type">
+              <option value="percentage">Percentage (%) বাদ দেবে</option>
+              <option value="fixed">Fixed Amount (৳) বাদ দেবে</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Discount Value</label>
+            <input type="number" id="cp-value" placeholder="e.g. 10 বা 200" min="1">
+          </div>
+        </div>
+        <div class="admin-form-row">
+          <div class="form-field">
+            <label>Minimum Order ৳ (0 = কোনো limit নেই)</label>
+            <input type="number" id="cp-min" value="0" min="0">
+          </div>
+          <div class="form-field">
+            <label>Max Uses (0 = unlimited)</label>
+            <input type="number" id="cp-max" value="0" min="0">
+          </div>
+        </div>
+      </div>
+      <div class="admin-modal-footer">
+        <button class="btn btn-secondary" onclick="this.closest('.admin-modal-overlay').remove()">Cancel</button>
+        <button class="btn btn-primary" id="cp-submit-btn" onclick="createCoupon()">✓ Create Coupon</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  setTimeout(() => document.getElementById('cp-code').focus(), 100);
+}
+
+async function createCoupon() {
+  const code  = (document.getElementById('cp-code').value || '').trim();
+  const type  = document.getElementById('cp-type').value;
+  const value = parseFloat(document.getElementById('cp-value').value);
+  const min   = parseInt(document.getElementById('cp-min').value) || 0;
+  const max   = parseInt(document.getElementById('cp-max').value) || 0;
+  const btn   = document.getElementById('cp-submit-btn');
+
+  if (!code)            { toast('Coupon code লিখুন', 'error'); return; }
+  if (!value || value<=0) { toast('Discount value দিন', 'error'); return; }
+  if (type==='percentage' && value>100) { toast('% discount 100 এর বেশি হবে না', 'error'); return; }
+
+  btn.disabled = true; btn.textContent = 'Creating...';
+  try {
+    const res = await HazeDB.createCoupon({ code, discountType:type, discountValue:value, minOrder:min, maxUses:max });
+    if (res && res.ok) {
+      document.querySelector('.admin-modal-overlay').remove();
+      toast('✓ Coupon "' + code + '" created!');
+      await renderCoupons();
+    } else {
+      toast((res&&res.error)||'Failed', 'error');
+      btn.disabled=false; btn.textContent='✓ Create Coupon';
+    }
+  } catch(e) { toast('Error: '+e.message,'error'); btn.disabled=false; btn.textContent='✓ Create Coupon'; }
+}
+
+async function toggleCoupon(id, isActive) {
+  await HazeDB.toggleCoupon(id, isActive);
+  toast(isActive ? '✓ Coupon enabled' : '✓ Coupon disabled');
+  await renderCoupons();
+}
+
+async function deleteCoupon(id) {
+  if (!confirm('এই coupon delete করবেন?')) return;
+  await HazeDB.deleteCoupon(id);
+  toast('✓ Coupon deleted');
+  await renderCoupons();
 }
 
 /* ── BOOT ─────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', checkAuth);
+

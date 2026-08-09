@@ -421,8 +421,8 @@
   <script src="cart.js"></script>
   <script src="script.js"></script>
   <script>
-    // ── USER AUTH NAV ────────────────────────────────────
-    (function initUserNav() {
+    // ── USER AUTH & SETTINGS NAV ─────────────────────────
+    (async function initPageData() {
       const user = HazeDB.getCurrentUser();
       if (user) {
         document.getElementById('nav-login-btn').style.display = 'none';
@@ -434,7 +434,56 @@
           document.getElementById('nav-admin-link').style.display = 'inline';
         }
       }
+
+      // Load Settings for Social Media Links
+      try {
+        const settings = await HazeDB.getSettings();
+        if (settings) {
+          if (settings.instagram) document.getElementById('social-ig').href = settings.instagram;
+          if (settings.facebook)  document.getElementById('social-fb').href = settings.facebook;
+          if (settings.tiktok)    document.getElementById('social-tt').href = settings.tiktok;
+        }
+      } catch (e) { console.error('Settings load error:', e); }
+
+      // Load Products from DB (if any added via Admin Panel)
+      try {
+        const dbProducts = await HazeDB.getProducts();
+        if (dbProducts && dbProducts.length > 0) {
+          const grid = document.getElementById('products-grid');
+          grid.innerHTML = dbProducts.map((p, idx) => {
+            const sizes = Array.isArray(p.sizes) ? p.sizes : (p.sizes || '').split(',').map(s => s.trim()).filter(Boolean);
+            const usd = p.priceUSD ? `~$${p.priceUSD}` : `~$${Math.round(p.price / 110)}`;
+            return `
+              <div class="product-card reveal" data-product-id="${p.id}">
+                <div class="product-image">
+                  <img src="${p.image || 'images/product-tee.png'}" alt="${p.name}" loading="lazy">
+                  ${p.tag ? `<span class="product-tag">${p.tag}</span>` : ''}
+                  <div class="product-card-actions">
+                    <button class="quick-view-btn" onclick="openQuickView('${p.id}')">Quick View</button>
+                    <a href="product.html?id=${p.id}" class="view-detail-btn">View Details</a>
+                  </div>
+                </div>
+                <div class="product-info">
+                  <h3 class="product-name"><a href="product.html?id=${p.id}" style="color:inherit;text-decoration:none">${p.name}</a></h3>
+                  <p class="product-desc">${p.description || ''}</p>
+                  <div class="product-price">৳ ${p.price.toLocaleString()} <span class="usd">${usd}</span></div>
+                  <div class="size-selector" data-product="${p.id}">
+                    ${sizes.map((s, i) => `<span class="size-btn ${i === 0 ? 'selected' : ''}" data-size="${s}" onclick="selectSizeBtn(this)">${s}</span>`).join('')}
+                  </div>
+                </div>
+                <button class="product-btn" onclick="addToCartFromCard('${p.id}',this)">Add to Cart</button>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (e) { console.error('Products load error:', e); }
     })();
+
+    function selectSizeBtn(btn) {
+      const parent = btn.closest('.size-selector');
+      parent.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    }
 
     function toggleUserMenu() {
       const dd = document.getElementById('user-dropdown');

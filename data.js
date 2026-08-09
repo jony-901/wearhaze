@@ -124,7 +124,10 @@ const HazeDB = (() => {
   async function createOrder(customer, paymentMethod) {
     const items = await getCartItems();
     if (items.length === 0) return null;
-    const total = await getCartTotal();
+    const subtotal = await getCartTotal();
+    const discount = customer.discount || 0;
+    const couponCode = customer.couponCode || '';
+    const total = Math.max(0, subtotal - discount + 80);
     const order = {
       orderId: generateOrderId(),
       customer,
@@ -132,7 +135,7 @@ const HazeDB = (() => {
         productId: i.productId, name: i.product.name, size: i.size,
         qty: i.qty, price: i.product.price, image: i.product.image
       })),
-      subtotal: total, shipping: 80, total: total + 80,
+      subtotal, shipping: 80, discount, couponCode, total,
       paymentMethod, status: 'pending',
       statusHistory: [{ status: 'pending', date: Date.now(), note: 'Order placed' }],
       createdAt: Date.now()
@@ -252,6 +255,24 @@ const HazeDB = (() => {
     };
   }
 
+  // ── COUPONS ──────────────────────────────────────────
+  async function getCoupons() {
+    const res = await apiCall('get_coupons');
+    return res || [];
+  }
+  async function createCoupon(couponData) {
+    return await apiCall('create_coupon', couponData);
+  }
+  async function toggleCoupon(id, isActive) {
+    return await apiCall('toggle_coupon', { id, is_active: isActive });
+  }
+  async function deleteCoupon(id) {
+    return await apiCall('delete_coupon', { id });
+  }
+  async function validateCoupon(code, total) {
+    return await apiCall('validate_coupon', { code, total });
+  }
+
   // ── INIT ─────────────────────────────────────────────
   function init() {
     // API backend doesn't need client-side init loading like localStorage did,
@@ -265,7 +286,10 @@ const HazeDB = (() => {
     getOrders, getOrder, getOrdersByPhone, getOrdersByEmail, createOrder, updateOrderStatus, deleteOrder,
     isAdminLoggedIn, adminLogout,
     registerUser, loginUser, getCurrentUser, isUserLoggedIn, isCurrentUserAdmin, logoutUser, getUserProfile,
-    getSettings, updateSettings, getAnalytics, init, ADMIN_EMAIL
+    getSettings, updateSettings, getAnalytics,
+    getCoupons, createCoupon, toggleCoupon, deleteCoupon, validateCoupon,
+    init, ADMIN_EMAIL
   };
 
 })();
+

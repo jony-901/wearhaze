@@ -149,7 +149,18 @@
             <h2 class="checkout-card-title" style="margin-bottom:1.5rem">Order Summary</h2>
             <div id="summary-items"></div>
             <div class="summary-divider"></div>
+            <!-- COUPON INPUT -->
+            <div style="margin-bottom:1rem">
+              <label style="font-family:var(--font-label);font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--smoke);display:block;margin-bottom:0.4rem">Coupon Code</label>
+              <div style="display:flex;gap:0.5rem">
+                <input type="text" id="co-coupon-input" placeholder="Enter coupon" style="flex:1;padding:0.6rem 0.8rem;background:rgba(107,79,160,0.06);border:1px solid rgba(107,79,160,0.2);color:var(--ghost);font-family:monospace;letter-spacing:0.1em;font-size:0.85rem;text-transform:uppercase;outline:none">
+                <button type="button" id="co-apply-coupon-btn" style="padding:0.6rem 1rem;background:var(--accent);color:white;border:none;font-family:var(--font-label);font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">Apply</button>
+              </div>
+              <div id="coupon-message" style="font-size:0.75rem;margin-top:0.4rem;display:none"></div>
+            </div>
+
             <div class="summary-row"><span>Subtotal</span><span id="sum-subtotal">৳ 0</span></div>
+            <div class="summary-row" id="discount-row" style="display:none;color:#4ade80"><span>Discount</span><span id="sum-discount">−৳ 0</span></div>
             <div class="summary-row"><span>Shipping</span><span>৳ 80</span></div>
             <div class="summary-divider"></div>
             <div class="summary-row total-row">
@@ -180,6 +191,9 @@
 
   <script src="data.js"></script>
   <script>
+    let appliedDiscount = 0;
+    let appliedCouponCode = '';
+
     document.addEventListener('DOMContentLoaded', async () => {
       const settings = await HazeDB.getSettings();
 
@@ -210,8 +224,53 @@
         </div>
       `).join('');
 
-      document.getElementById('sum-subtotal').textContent = '৳ ' + subtotal.toLocaleString();
-      document.getElementById('sum-total').textContent = '৳ ' + (subtotal + 80).toLocaleString();
+      function updateTotals() {
+        const total = Math.max(0, subtotal - appliedDiscount + 80);
+        document.getElementById('sum-subtotal').textContent = '৳ ' + subtotal.toLocaleString();
+        document.getElementById('sum-total').textContent = '৳ ' + total.toLocaleString();
+
+        const mpAmt = document.getElementById('mpay-amount');
+        if (mpAmt) mpAmt.textContent = '৳ ' + total.toLocaleString();
+
+        if (appliedDiscount > 0) {
+          document.getElementById('discount-row').style.display = 'flex';
+          document.getElementById('sum-discount').textContent = '−৳ ' + appliedDiscount.toLocaleString();
+        } else {
+          document.getElementById('discount-row').style.display = 'none';
+        }
+      }
+      updateTotals();
+
+      // Coupon application
+      document.getElementById('co-apply-coupon-btn').addEventListener('click', async () => {
+        const codeInput = document.getElementById('co-coupon-input');
+        const msgDiv    = document.getElementById('coupon-message');
+        const code      = codeInput.value.trim();
+
+        if (!code) {
+          msgDiv.style.display = 'block';
+          msgDiv.style.color = '#f87171';
+          msgDiv.textContent = 'Coupon code লিখুন।';
+          return;
+        }
+
+        const res = await HazeDB.validateCoupon(code, subtotal);
+        msgDiv.style.display = 'block';
+
+        if (res && res.ok) {
+          appliedDiscount   = res.discount;
+          appliedCouponCode = res.code;
+          msgDiv.style.color = '#4ade80';
+          msgDiv.textContent = '✓ ' + res.message;
+          updateTotals();
+        } else {
+          appliedDiscount   = 0;
+          appliedCouponCode = '';
+          msgDiv.style.color = '#f87171';
+          msgDiv.textContent = '✕ ' + ((res && res.error) || 'Invalid coupon.');
+          updateTotals();
+        }
+      });
 
       // Payment toggle
       document.querySelectorAll('input[name="payment"]').forEach(radio => {
@@ -219,23 +278,22 @@
           const mpInfo = document.getElementById('mobile-payment-info');
           const mpAmt = document.getElementById('mpay-amount');
           const mpNum = document.getElementById('mpay-number');
+          const total = Math.max(0, subtotal - appliedDiscount + 80);
           if (radio.value === 'bkash') {
             mpInfo.style.display = 'block';
-            mpAmt.textContent = '৳ ' + (subtotal + 80).toLocaleString();
+            mpAmt.textContent = '৳ ' + total.toLocaleString();
             mpNum.textContent = settings.bkash || '01XXXXXXXXX';
           } else if (radio.value === 'nagad') {
             mpInfo.style.display = 'block';
-            mpAmt.textContent = '৳ ' + (subtotal + 80).toLocaleString();
+            mpAmt.textContent = '৳ ' + total.toLocaleString();
             mpNum.textContent = settings.nagad || '01XXXXXXXXX';
           } else {
             mpInfo.style.display = 'none';
           }
-          // Update check marks
           document.querySelectorAll('.payment-card').forEach(c => c.classList.remove('selected'));
           radio.closest('.payment-option').querySelector('.payment-card').classList.add('selected');
         });
       });
-      // Set initial selected
       document.querySelector('input[name="payment"]:checked').closest('.payment-option').querySelector('.payment-card').classList.add('selected');
 
       // Place order
@@ -273,7 +331,9 @@
         district,
         zip: document.getElementById('co-zip').value.trim(),
         notes,
-        trxid: trxid || ''
+        trxid: trxid || '',
+        discount: appliedDiscount,
+        couponCode: appliedCouponCode
       }, payment);
 
       if (order) {
@@ -288,3 +348,4 @@
   </script>
 </body>
 </html>
+
