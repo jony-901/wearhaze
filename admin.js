@@ -33,121 +33,7 @@ function updateTime() {
 setInterval(updateTime, 1000);
 updateTime();
 
-/* ── AUTH ─────────────────────────────────────────────── */
-const ADMIN_EMAIL_LC = 'wearhaze.com@gmail.com';
-
-function isAdminAuthenticated() {
-  // Check localStorage first (persists across tabs/sessions)
-  if (localStorage.getItem('haze_admin_auth') === 'true') return true;
-  if (sessionStorage.getItem('haze_admin_auth') === 'true') return true;
-  // Check stored user
-  try {
-    const u = JSON.parse(localStorage.getItem('haze_user') || sessionStorage.getItem('haze_user') || 'null');
-    if (u && (u.role === 'admin' || (u.email && u.email.toLowerCase() === ADMIN_EMAIL_LC))) return true;
-  } catch(e) {}
-  return false;
-}
-
-function setAdminAuth() {
-  localStorage.setItem('haze_admin_auth', 'true');
-  sessionStorage.setItem('haze_admin_auth', 'true');
-}
-
-function clearAdminAuth() {
-  localStorage.removeItem('haze_admin_auth');
-  sessionStorage.removeItem('haze_admin_auth');
-  localStorage.removeItem('haze_user');
-  sessionStorage.removeItem('haze_user');
-}
-
-// On page load: if already authenticated, skip login screen
-document.addEventListener('DOMContentLoaded', () => {
-  if (isAdminAuthenticated()) {
-    showApp();
-  }
-});
-
-document.getElementById('login-btn').addEventListener('click', async () => {
-  const email = (document.getElementById('login-email').value || '').trim().toLowerCase();
-  const pass  = document.getElementById('login-pass').value.trim();
-  const errEl = document.getElementById('login-error');
-
-  if (!email || !pass) {
-    errEl.textContent = 'Email এবং Password লিখুন।';
-    errEl.style.display = 'block';
-    return;
-  }
-  errEl.style.display = 'none';
-
-  const btn = document.getElementById('login-btn');
-  btn.textContent = 'Logging in...';
-  btn.disabled = true;
-
-  try {
-    const res = await HazeDB.loginUser(email, pass);
-    if (res && res.ok) {
-      setAdminAuth();
-      localStorage.setItem('haze_user', JSON.stringify(res.user));
-      sessionStorage.setItem('haze_user', JSON.stringify(res.user));
-      showApp();
-      return;
-    } else {
-      // If admin email — always grant access regardless
-      if (email === ADMIN_EMAIL_LC || email.includes('admin')) {
-        setAdminAuth();
-        showApp();
-        return;
-      }
-      errEl.textContent = (res && res.error) ? res.error : 'ভুল Password। আবার চেষ্টা করুন।';
-      errEl.style.display = 'block';
-    }
-  } catch(e) {
-    console.error('Login error:', e);
-    // Network error — if admin email, still grant access
-    if (email === ADMIN_EMAIL_LC || email.includes('admin')) {
-      setAdminAuth();
-      showApp();
-      return;
-    }
-    errEl.textContent = 'Network error। আবার চেষ্টা করুন।';
-    errEl.style.display = 'block';
-  }
-
-  btn.textContent = 'Login to Admin Panel';
-  btn.disabled = false;
-});
-
-document.getElementById('login-pass').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('login-btn').click();
-});
-document.getElementById('login-email').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('login-pass').focus();
-});
-
-document.getElementById('logout-btn').addEventListener('click', () => {
-  clearAdminAuth();
-  document.getElementById('admin-app').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('login-pass').value = '';
-  document.getElementById('login-email').value = '';
-});
-
-async function showApp() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('admin-app').style.display = 'block';
-
-  try {
-    const settings = await HazeDB.getSettings();
-    if (settings) {
-      document.getElementById('sidebar-store-info').textContent = (settings.storeName || 'HAZE') + '\n' + (settings.email || '');
-    }
-  } catch(e) { console.error('Settings init error:', e); }
-
-  try { await updatePendingBadge(); } catch(e) {}
-
-  await navigateTo('dashboard');
-}
-
+/* ── PENDING BADGE ────────────────────────────────────── */
 async function updatePendingBadge() {
   try {
     const orders = (await HazeDB.getOrders()) || [];
@@ -159,6 +45,8 @@ async function updatePendingBadge() {
     }
   } catch(e) {}
 }
+
+
 
 /* ── NAVIGATION ───────────────────────────────────────── */
 document.querySelectorAll('.sidebar-link[data-page]').forEach(link => {
