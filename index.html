@@ -302,20 +302,36 @@
         <div class="lookbook-header">
           <span class="section-label reveal">03 — Lookbook</span>
           <h2 class="section-title reveal reveal-delay-1">The Aesthetic</h2>
+          <p class="lookbook-subtitle reveal reveal-delay-2">একটি ক্যাটাগরিতে ক্লিক করলে শুধু সেই প্রোডাক্টগুলো দেখাবে</p>
         </div>
-        <div class="lookbook-grid">
-          <div class="lookbook-item reveal">
-            <img src="images/product-hoodie.png" alt="HAZE Lookbook — Hoodie" loading="lazy">
-            <span class="lookbook-label">Hoodie — Void</span>
-          </div>
-          <div class="lookbook-item reveal reveal-delay-1">
-            <img src="images/product-cargo.png" alt="HAZE Lookbook — Cargo" loading="lazy">
-            <span class="lookbook-label">Cargo — Void</span>
-          </div>
-          <div class="lookbook-item reveal reveal-delay-2">
-            <img src="images/product-cap.png" alt="HAZE Lookbook — Cap" loading="lazy">
-            <span class="lookbook-label">Cap — Void</span>
-          </div>
+
+        <!-- Category Tabs -->
+        <div class="lookbook-tabs reveal reveal-delay-2">
+          <button class="lookbook-tab active" data-category="t-shirt" onclick="filterLookbook('t-shirt', this)">
+            <span class="tab-icon">👕</span>
+            <span>T-Shirt</span>
+          </button>
+          <button class="lookbook-tab" data-category="hoodie" onclick="filterLookbook('hoodie', this)">
+            <span class="tab-icon">🧥</span>
+            <span>Hoodie</span>
+          </button>
+          <button class="lookbook-tab" data-category="cargo" onclick="filterLookbook('cargo', this)">
+            <span class="tab-icon">👖</span>
+            <span>Cargo</span>
+          </button>
+          <button class="lookbook-tab" data-category="cap" onclick="filterLookbook('cap', this)">
+            <span class="tab-icon">🧢</span>
+            <span>Cap</span>
+          </button>
+        </div>
+
+        <!-- Product Grid (filtered) -->
+        <div class="lookbook-grid" id="lookbook-grid">
+          <div class="lookbook-loading">Loading...</div>
+        </div>
+
+        <div class="lookbook-cta reveal">
+          <a href="#shop" class="btn-outline" id="lookbook-shop-link" onclick="scrollToShop()">Shop All →</a>
         </div>
       </div>
     </div>
@@ -627,6 +643,91 @@
     document.getElementById('qv-modal').addEventListener('click', (e) => {
       if (e.target.id === 'qv-modal') closeQuickView();
     });
+
+    // ── LOOKBOOK FILTER ────────────────────────────────────
+    let allProducts = [];
+
+    async function loadLookbook() {
+      try {
+        allProducts = await HazeDB.getProducts();
+        filterLookbook('t-shirt', document.querySelector('.lookbook-tab[data-category="t-shirt"]'));
+      } catch(e) {
+        document.getElementById('lookbook-grid').innerHTML = '<div class="lookbook-no-products">Could not load products.</div>';
+      }
+    }
+
+    function filterLookbook(category, btn) {
+      // Update active tab
+      document.querySelectorAll('.lookbook-tab').forEach(t => t.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      // Update shop link
+      const shopLink = document.getElementById('lookbook-shop-link');
+      if (shopLink) shopLink.setAttribute('data-filter', category);
+
+      const grid = document.getElementById('lookbook-grid');
+      grid.classList.add('filtering');
+
+      setTimeout(() => {
+        const filtered = allProducts.filter(p => {
+          const cat = (p.category || '').toLowerCase();
+          if (category === 't-shirt') return cat === 't-shirt' || cat === 'tshirt' || cat === 't shirt' || cat === 'tops';
+          if (category === 'hoodie') return cat === 'hoodie' || cat === 'hoodies';
+          if (category === 'cargo') return cat === 'cargo' || cat === 'pants' || cat === 'bottoms';
+          if (category === 'cap') return cat === 'cap' || cat === 'caps' || cat === 'accessories' || cat === 'hat';
+          return cat === category;
+        });
+
+        if (filtered.length === 0) {
+          // Fallback images if no DB products for this category
+          const fallbacks = {
+            't-shirt': { img: 'images/product-tee.png', label: 'HAZE Tee — Drop 01' },
+            'hoodie':  { img: 'images/product-hoodie.png', label: 'HAZE Hoodie — Drop 01' },
+            'cargo':   { img: 'images/product-cargo.png', label: 'HAZE Cargo — Drop 01' },
+            'cap':     { img: 'images/product-cap.png', label: 'HAZE Cap — Drop 01' }
+          };
+          const fb = fallbacks[category] || { img: 'images/product-tee.png', label: category };
+          grid.innerHTML = `
+            <div class="lookbook-item">
+              <img src="${fb.img}" alt="${fb.label}" loading="lazy">
+              <span class="lookbook-label">${fb.label}</span>
+            </div>
+            <div class="lookbook-item">
+              <img src="${fb.img}" alt="${fb.label}" loading="lazy">
+              <span class="lookbook-label">${fb.label}</span>
+            </div>
+            <div class="lookbook-item">
+              <img src="${fb.img}" alt="${fb.label}" loading="lazy">
+              <span class="lookbook-label">${fb.label}</span>
+            </div>
+          `;
+        } else {
+          grid.innerHTML = filtered.slice(0, 6).map(p => {
+            const hasDiscount = p.originalPrice && p.originalPrice > p.price;
+            const tagHtml = p.tag ? `<span class="lookbook-tag">${p.tag}</span>` : '';
+            return `
+              <div class="lookbook-item" onclick="window.location='product.html?id=${p.id}'">
+                ${tagHtml}
+                <img src="${p.image || 'images/product-tee.png'}" alt="${p.name}" loading="lazy">
+                <span class="lookbook-label">${p.name}</span>
+                <span class="lookbook-price">৳ ${p.price.toLocaleString()}</span>
+              </div>
+            `;
+          }).join('');
+        }
+
+        grid.classList.remove('filtering');
+      }, 200);
+    }
+
+    function scrollToShop() {
+      const shopSection = document.getElementById('shop');
+      if (shopSection) shopSection.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Load lookbook on page ready
+    loadLookbook();
+
   </script>
 </body>
 </html>
