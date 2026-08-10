@@ -186,6 +186,9 @@ if ($action === 'setup') {
     try { $pdo->exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount INT DEFAULT 0"); } catch(Exception $e){}
     try { $pdo->exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_code VARCHAR(50) DEFAULT ''"); } catch(Exception $e){}
     try { $pdo->exec("ALTER TABLE products ADD COLUMN IF NOT EXISTS original_price INT DEFAULT 0"); } catch(Exception $e){}
+    // Upgrade settings value column for base64 images
+    try { $pdo->exec("ALTER TABLE settings MODIFY setting_value LONGTEXT"); } catch(Exception $e){}
+
 
     echo json_encode(['ok' => true, 'message' => 'All tables created/updated!']);
     exit();
