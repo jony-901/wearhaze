@@ -303,7 +303,8 @@
           <span class="section-label reveal">03 — Lookbook</span>
           <h2 class="section-title reveal reveal-delay-1">The Aesthetic</h2>
         </div>
-        <div class="lookbook-grid">
+        <div class="lookbook-grid" id="lookbook-grid">
+          <!-- Loaded dynamically from settings -->
           <div class="lookbook-item reveal" onclick="goToCategory('t-shirt')">
             <img src="images/product-tee.png" alt="HAZE Lookbook — T-Shirt" loading="lazy">
             <span class="lookbook-label">T-Shirt</span>
@@ -462,6 +463,22 @@
           if (settings.tagline) {
             const heroTag = document.querySelector('.hero-tagline');
             if (heroTag) heroTag.textContent = settings.tagline;
+          }
+          // Load lookbook from settings
+          if (settings.lookbookItems && settings.lookbookItems.length > 0) {
+            const lbGrid = document.getElementById('lookbook-grid');
+            if (lbGrid) {
+              lbGrid.innerHTML = settings.lookbookItems.map((item, i) => `
+                <div class="lookbook-item reveal" onclick="goToCategory('${item.category || ''}')">
+                  <img src="${item.img}" alt="HAZE Lookbook — ${item.label}" loading="lazy">
+                  <span class="lookbook-label">${item.label}</span>
+                  <span class="lookbook-arrow">Shop →</span>
+                </div>
+              `).join('');
+              setTimeout(() => {
+                lbGrid.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+              }, 100);
+            }
           }
         }
       } catch (e) { console.error('Settings load error:', e); }

@@ -630,8 +630,174 @@ async function renderSettings() {
   h += '<div style="margin-top:1rem;font-size:.75rem;color:var(--smoke)">API Key নেই? <a href="https://api.imgbb.com/" target="_blank" style="color:var(--accent);text-decoration:none">এখান থেকে ফ্রি তৈরি করুন</a>।</div>';
   h += '</div></div></div>';
 
+  h += '</div>'; // end 2-col grid
+
+  // --- LOOKBOOK MANAGER (full width below) ---
+  var lookbookItems = s.lookbookItems || [
+    { id: 'lb-tshirt', img: 'images/product-tee.png',    label: 'T-Shirt', category: 't-shirt' },
+    { id: 'lb-hoodie', img: 'images/product-hoodie.png', label: 'Hoodie',  category: 'hoodie'  },
+    { id: 'lb-cargo',  img: 'images/product-cargo.png',  label: 'Cargo',   category: 'cargo'   },
+    { id: 'lb-cap',    img: 'images/product-cap.png',    label: 'Cap',     category: 'cap'     }
+  ];
+
+  h += '<div class="panel" style="border:1px solid rgba(139,92,246,.4);margin-top:1.5rem">';
+  h += '<div class="panel-header" style="background:rgba(139,92,246,.1)"><div class="panel-title">🖼️ Lookbook Manager</div></div>';
+  h += '<div class="panel-body">';
+  h += '<p style="font-size:.8rem;color:var(--ash);margin-bottom:1.5rem">Lookbook section-এর ছবি পরিবর্তন করুন, নতুন আইটেম যুক্ত করুন বা মুছুন।</p>';
+
+  h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem">';
+  for (var i = 0; i < lookbookItems.length; i++) {
+    var item = lookbookItems[i];
+    h += '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;overflow:hidden">';
+    h += '<div style="position:relative;aspect-ratio:2/3;overflow:hidden">';
+    h += '<img src="' + item.img + '" id="lb-img-prev-' + i + '" style="width:100%;height:100%;object-fit:cover;filter:brightness(.75)" onerror="this.src=\'images/product-tee.png\'">';
+    h += '<label style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);cursor:pointer;opacity:0;transition:.2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0">';
+    h += '<span style="background:var(--accent);color:#fff;padding:.4rem .8rem;border-radius:4px;font-size:.65rem;letter-spacing:.1em">📷 Change</span>';
+    h += '<input type="file" accept="image/*" style="display:none" onchange="changeLookbookPhoto(this,' + i + ')">';
+    h += '</label></div>';
+    h += '<div style="padding:.75rem">';
+    h += '<input type="text" value="' + item.label + '" id="lb-label-' + i + '" placeholder="Label" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--white);padding:.4rem .6rem;font-size:.8rem;border-radius:4px;box-sizing:border-box;margin-bottom:.5rem">';
+    h += '<select id="lb-cat-' + i + '" style="width:100%;background:rgba(13,11,18,.95);border:1px solid rgba(255,255,255,.1);color:var(--ash);padding:.4rem .6rem;font-size:.75rem;border-radius:4px;box-sizing:border-box;margin-bottom:.6rem">';
+    ['t-shirt','hoodie','cargo','cap'].forEach(function(cat) {
+      h += '<option value="' + cat + '"' + (item.category===cat?' selected':'') + '>' + cat.charAt(0).toUpperCase()+cat.slice(1) + '</option>';
+    });
+    h += '</select>';
+    h += '<div style="display:flex;gap:.4rem">';
+    h += '<button class="btn btn-primary" style="flex:1;padding:.4rem;font-size:.7rem" onclick="saveLookbookItem(' + i + ')">💾</button>';
+    h += '<button onclick="deleteLookbookItem(' + i + ')" style="padding:.4rem .6rem;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;font-size:.8rem;border-radius:4px;cursor:pointer">🗑</button>';
+    h += '</div></div></div>';
+  }
   h += '</div>';
+
+  // Add new
+  h += '<div style="border:1px dashed rgba(139,92,246,.4);border-radius:8px;padding:1.2rem">';
+  h += '<div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:1rem">+ নতুন Lookbook Item যুক্ত করুন</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">';
+  h += '<div><label style="font-size:.7rem;color:var(--ash);display:block;margin-bottom:.3rem">Photo</label>';
+  h += '<button type="button" class="btn btn-primary" style="width:100%;padding:.5rem;font-size:.75rem" onclick="document.getElementById(\'lb-new-file\').click()">📁 Choose</button>';
+  h += '<input type="file" id="lb-new-file" accept="image/*" style="display:none" onchange="previewNewLookbook(this)">';
+  h += '<img id="lb-new-preview" style="display:none;height:50px;width:50px;object-fit:cover;border-radius:4px;margin-top:.4rem;border:1px solid rgba(139,92,246,.4)">';
+  h += '<input type="hidden" id="lb-new-img-data"></div>';
+  h += '<div><label style="font-size:.7rem;color:var(--ash);display:block;margin-bottom:.3rem">Label</label>';
+  h += '<input type="text" id="lb-new-label" placeholder="e.g. Summer Drop" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--white);padding:.5rem;font-size:.8rem;border-radius:4px;box-sizing:border-box"></div>';
+  h += '<div><label style="font-size:.7rem;color:var(--ash);display:block;margin-bottom:.3rem">Category</label>';
+  h += '<select id="lb-new-cat" style="width:100%;background:rgba(13,11,18,.95);border:1px solid rgba(255,255,255,.1);color:var(--ash);padding:.5rem;font-size:.8rem;border-radius:4px;box-sizing:border-box">';
+  h += '<option value="t-shirt">T-Shirt</option><option value="hoodie">Hoodie</option><option value="cargo">Cargo</option><option value="cap">Cap</option>';
+  h += '</select></div></div>';
+  h += '<button class="btn btn-primary" style="width:100%;padding:.6rem" onclick="addLookbookItem()">+ Add to Lookbook</button>';
+  h += '</div>';
+
+  h += '</div></div>'; // end lookbook panel
+
   c.innerHTML = h;
+}
+
+/* ══════════════════════════════════════════════════
+   LOOKBOOK MANAGER
+══════════════════════════════════════════════════ */
+
+async function getLookbookItems() {
+  var s = (await HazeDB.getSettings()) || {};
+  return s.lookbookItems || [
+    { id: 'lb-tshirt', img: 'images/product-tee.png',    label: 'T-Shirt', category: 't-shirt' },
+    { id: 'lb-hoodie', img: 'images/product-hoodie.png', label: 'Hoodie',  category: 'hoodie'  },
+    { id: 'lb-cargo',  img: 'images/product-cargo.png',  label: 'Cargo',   category: 'cargo'   },
+    { id: 'lb-cap',    img: 'images/product-cap.png',    label: 'Cap',     category: 'cap'     }
+  ];
+}
+
+function changeLookbookPhoto(input, idx) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var img = new Image();
+    img.onload = async function() {
+      var canvas = document.createElement('canvas');
+      var max = 800;
+      var w = img.width, h = img.height;
+      if (w > h) { if (w > max) { h *= max/w; w = max; } }
+      else { if (h > max) { w *= max/h; h = max; } }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      var b64 = canvas.toDataURL('image/jpeg', 0.85);
+
+      // Update preview immediately
+      var preview = document.getElementById('lb-img-prev-' + idx);
+      if (preview) preview.src = b64;
+
+      // Save to settings
+      try {
+        var items = await getLookbookItems();
+        items[idx].img = b64;
+        await HazeDB.updateSettings({ lookbookItems: items });
+        toast('✓ Photo changed!');
+      } catch(e) { toast('Error: ' + e.message, 'error'); }
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveLookbookItem(idx) {
+  try {
+    var items = await getLookbookItems();
+    items[idx].label    = document.getElementById('lb-label-' + idx).value.trim();
+    items[idx].category = document.getElementById('lb-cat-' + idx).value;
+    await HazeDB.updateSettings({ lookbookItems: items });
+    toast('✓ Lookbook item saved!');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function deleteLookbookItem(idx) {
+  if (!confirmDel('এই Lookbook item মুছে ফেলবেন?')) return;
+  try {
+    var items = await getLookbookItems();
+    items.splice(idx, 1);
+    await HazeDB.updateSettings({ lookbookItems: items });
+    toast('✓ Deleted!');
+    await renderSettings();
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+function previewNewLookbook(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var max = 800;
+      var w = img.width, h = img.height;
+      if (w > h) { if (w > max) { h *= max/w; w = max; } }
+      else { if (h > max) { w *= max/h; h = max; } }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      var b64 = canvas.toDataURL('image/jpeg', 0.85);
+      document.getElementById('lb-new-img-data').value = b64;
+      var prev = document.getElementById('lb-new-preview');
+      prev.src = b64;
+      prev.style.display = 'block';
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function addLookbookItem() {
+  var imgData = document.getElementById('lb-new-img-data').value;
+  var label   = document.getElementById('lb-new-label').value.trim();
+  var cat     = document.getElementById('lb-new-cat').value;
+  if (!imgData) { toast('Please choose a photo first!', 'error'); return; }
+  if (!label)   { toast('Please enter a label!', 'error'); return; }
+  try {
+    var items = await getLookbookItems();
+    items.push({ id: 'lb-' + Date.now(), img: imgData, label: label, category: cat });
+    await HazeDB.updateSettings({ lookbookItems: items });
+    toast('✓ Lookbook item added!');
+    await renderSettings();
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
 async function saveStoreSettings() {
