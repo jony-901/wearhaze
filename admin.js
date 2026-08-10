@@ -54,7 +54,7 @@ async function navigateTo(page) {
     var al = document.querySelector('.sidebar-link[data-page="' + page + '"]');
     if (al) al.classList.add('active');
     var te = document.getElementById('page-title');
-    if (te) te.textContent = {dashboard:'Dashboard',orders:'Orders',products:'Products',coupons:'Coupons',settings:'Settings'}[page] || page;
+    if (te) te.textContent = {dashboard:'Dashboard',orders:'Orders',products:'Products',coupons:'Coupons',settings:'Settings',content:'Website Content'}[page] || page;
     var c = document.getElementById('admin-content');
     if (!c) return;
     c.innerHTML = '<div style="padding:3rem;text-align:center;color:#9d8fc0">Loading...</div>';
@@ -63,6 +63,7 @@ async function navigateTo(page) {
     else if (page === 'products') await renderProducts();
     else if (page === 'coupons') await renderCoupons();
     else if (page === 'settings') await renderSettings();
+    else if (page === 'content') await renderContent();
   } catch (err) {
     console.error('Page error:', err);
     var c2 = document.getElementById('admin-content');
@@ -567,6 +568,163 @@ async function deleteProduct(id) {
   await HazeDB.deleteProduct(id);
   toast('Product deleted', 'error');
   await renderProducts();
+}
+
+/* ══════════════════════════════════════════════════
+   SETTINGS
+══════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════
+   WEBSITE CONTENT MANAGER
+══════════════════════════════════════════════════ */
+async function renderContent() {
+  var s = (await HazeDB.getSettings()) || {};
+  var c = document.getElementById('admin-content');
+
+  function field(id, label, val, type, placeholder) {
+    type = type || 'text';
+    return '<div class="form-field"><label>' + label + '</label><input type="' + type + '" id="' + id + '" value="' + (val||'').replace(/"/g,'&quot;') + '" placeholder="' + (placeholder||'') + '"></div>';
+  }
+  function textarea(id, label, val) {
+    return '<div class="form-field"><label>' + label + '</label><textarea id="' + id + '" rows="3" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--white);padding:.6rem;font-size:.85rem;border-radius:4px;resize:vertical;box-sizing:border-box">' + (val||'') + '</textarea></div>';
+  }
+  function imgUploadBox(previewId, fileId, currentImg, changeFn) {
+    var h = '';
+    h += '<div style="display:flex;align-items:center;gap:1rem;margin-top:.5rem">';
+    if (currentImg) h += '<img id="' + previewId + '" src="' + currentImg + '" style="height:70px;width:90px;object-fit:cover;border-radius:4px;border:1px solid rgba(139,92,246,.3)">';
+    else h += '<div id="' + previewId + '" style="height:70px;width:90px;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.15);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--ash)">No img</div>';
+    h += '<label style="cursor:pointer;background:var(--accent);color:#fff;padding:.45rem .9rem;border-radius:4px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase">📷 Change<input type="file" id="' + fileId + '" accept="image/*" style="display:none" onchange="' + changeFn + '(this)"></label>';
+    h += '</div>';
+    return h;
+  }
+  function panel(icon, title, content, saveId, saveFn) {
+    return '<div class="panel" style="margin-bottom:1.5rem"><div class="panel-header"><div class="panel-title">' + icon + ' ' + title + '</div></div><div class="panel-body"><div class="admin-form">' + content + '<button class="btn btn-primary" id="' + saveId + '" onclick="' + saveFn + '()" style="width:100%;margin-top:.5rem;padding:.75rem">💾 Save ' + title + '</button></div></div></div>';
+  }
+
+  var h = '';
+
+  // HERO
+  var heroHtml = '';
+  heroHtml += field('c-hero-title',   '🔤 Brand Name / Headline',    s.heroTitle   || 'HAZE');
+  heroHtml += field('c-hero-tagline', '✏️ Tagline (below headline)', s.heroTagline || 'Wear the Haze');
+  heroHtml += field('c-hero-cta',     '🔘 Button Text',              s.heroCTA     || 'Explore Drop 01');
+  heroHtml += '<label style="font-size:.75rem;color:var(--ash);display:block;margin-top:.5rem;margin-bottom:.25rem">🖼️ Background Image</label>';
+  heroHtml += imgUploadBox('hero-bg-preview', 'hero-bg-file', s.heroBgImage||'', 'contentUploadHeroBg');
+  h += panel('🏠', 'Hero Section', heroHtml, 'save-hero-btn', 'saveContentHero');
+
+  // ABOUT
+  var aboutHtml = '';
+  aboutHtml += field('c-about-heading',   '📌 Heading',           s.aboutHeading   || 'Born from a feeling.');
+  aboutHtml += textarea('c-about-text1',  '📝 Paragraph 1',       s.aboutText1     || 'HAZE was born from that moment between dreaming and waking...');
+  aboutHtml += textarea('c-about-text2',  '📝 Paragraph 2',       s.aboutText2     || 'Not fully corporate. Not fully street...');
+  aboutHtml += field('c-about-highlight', '✨ Highlight Text',     s.aboutHighlight || 'Just vibes.\nJust HAZE.');
+  aboutHtml += '<label style="font-size:.75rem;color:var(--ash);display:block;margin-top:.5rem;margin-bottom:.25rem">🖼️ About Image</label>';
+  aboutHtml += imgUploadBox('about-img-preview-c', 'about-img-file-c', s.aboutImage||'', 'contentUploadAbout');
+  h += panel('ℹ️', 'About Section', aboutHtml, 'save-about-btn', 'saveContentAbout');
+
+  // SHOP
+  var shopHtml = '';
+  shopHtml += field('c-shop-title',    '📌 Section Title',    s.shopTitle    || 'Drop 01: Void');
+  shopHtml += field('c-shop-subtitle', '📝 Subtitle Text',    s.shopSubtitle || 'Where darkness meets design. Limited pieces, unlimited vibe.');
+  h += panel('🛍️', 'Shop Section', shopHtml, 'save-shop-btn', 'saveContentShop');
+
+  // MARQUEE
+  var marqHtml = textarea('c-marquee', '📢 Running Text (dots will separate each phrase)', s.marqueeText || 'Wear the Haze · Blur the Lines · Own Your Fog · Lost in the Haze · Just. Haze.');
+  h += panel('💬', 'Marquee (Running Banner)', marqHtml, 'save-marq-btn', 'saveContentMarquee');
+
+  // BRAND QUOTE
+  var quoteHtml = '';
+  quoteHtml += field('c-quote-text',   '💬 Quote Text',   s.quoteText   || 'Blur the\nLines.');
+  quoteHtml += field('c-quote-author', '✍️ Author/Credit', s.quoteAuthor || '— HAZE, Drop 01: VOID');
+  h += panel('✨', 'Brand Quote Section', quoteHtml, 'save-quote-btn', 'saveContentQuote');
+
+  c.innerHTML = '<div style="max-width:720px">' + h + '</div>';
+}
+
+// ── CONTENT SAVE FUNCTIONS ──────────────────────────────────
+
+function contentCompressImage(file, callback) {
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var max = 1200; var w = img.width, hi = img.height;
+      if (w > hi) { if (w > max) { hi *= max/w; w = max; } }
+      else { if (hi > max) { w *= max/hi; hi = max; } }
+      canvas.width = w; canvas.height = hi;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, hi);
+      callback(canvas.toDataURL('image/jpeg', 0.88));
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function contentUploadHeroBg(input) {
+  if (!input.files[0]) return;
+  contentCompressImage(input.files[0], async function(b64) {
+    document.getElementById('hero-bg-preview').src = b64;
+    await HazeDB.updateSettings({ heroBgImage: b64 });
+    toast('✓ Hero background updated!');
+  });
+}
+function contentUploadAbout(input) {
+  if (!input.files[0]) return;
+  contentCompressImage(input.files[0], async function(b64) {
+    document.getElementById('about-img-preview-c').src = b64;
+    await HazeDB.updateSettings({ aboutImage: b64 });
+    toast('✓ About image updated!');
+  });
+}
+
+async function saveContentHero() {
+  try {
+    await HazeDB.updateSettings({
+      heroTitle:   document.getElementById('c-hero-title').value.trim(),
+      heroTagline: document.getElementById('c-hero-tagline').value.trim(),
+      heroCTA:     document.getElementById('c-hero-cta').value.trim()
+    });
+    toast('✓ Hero section saved!');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function saveContentAbout() {
+  try {
+    await HazeDB.updateSettings({
+      aboutHeading:   document.getElementById('c-about-heading').value.trim(),
+      aboutText1:     document.getElementById('c-about-text1').value.trim(),
+      aboutText2:     document.getElementById('c-about-text2').value.trim(),
+      aboutHighlight: document.getElementById('c-about-highlight').value.trim()
+    });
+    toast('✓ About section saved!');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function saveContentShop() {
+  try {
+    await HazeDB.updateSettings({
+      shopTitle:    document.getElementById('c-shop-title').value.trim(),
+      shopSubtitle: document.getElementById('c-shop-subtitle').value.trim()
+    });
+    toast('✓ Shop section saved!');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function saveContentMarquee() {
+  try {
+    await HazeDB.updateSettings({ marqueeText: document.getElementById('c-marquee').value.trim() });
+    toast('✓ Marquee text saved!');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function saveContentQuote() {
+  try {
+    await HazeDB.updateSettings({
+      quoteText:   document.getElementById('c-quote-text').value.trim(),
+      quoteAuthor: document.getElementById('c-quote-author').value.trim()
+    });
+    toast('✓ Quote saved!');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
 /* ══════════════════════════════════════════════════

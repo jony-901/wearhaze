@@ -110,15 +110,15 @@
   <!-- HERO -->
   <section class="hero" id="home">
     <div class="hero-bg">
-      <img src="images/hero-bg.png" alt="HAZE atmospheric background">
+      <img src="images/hero-bg.png" alt="HAZE atmospheric background" id="hero-bg-img">
     </div>
     <div class="hero-overlay"></div>
     <div class="hero-content">
-      <h1 class="hero-title">HAZE</h1>
-      <p class="hero-tagline">Wear the Haze</p>
+      <h1 class="hero-title" id="hero-title">HAZE</h1>
+      <p class="hero-tagline" id="hero-tagline">Wear the Haze</p>
       <div class="hero-divider"></div>
-      <a href="#products" class="hero-cta">
-        Explore Drop 01
+      <a href="#products" class="hero-cta" id="hero-cta">
+        <span id="hero-cta-text">Explore Drop 01</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
       </a>
     </div>
@@ -130,9 +130,9 @@
 
   <!-- MARQUEE -->
   <div class="marquee">
-    <div class="marquee-track">
-      <div class="marquee-item">Wear the Haze <span class="dot"></span> Blur the Lines <span class="dot"></span> Own Your Fog <span class="dot"></span> Lost in the Haze <span class="dot"></span> Just. Haze. <span class="dot"></span></div>
-      <div class="marquee-item">Wear the Haze <span class="dot"></span> Blur the Lines <span class="dot"></span> Own Your Fog <span class="dot"></span> Lost in the Haze <span class="dot"></span> Just. Haze. <span class="dot"></span></div>
+    <div class="marquee-track" id="marquee-track">
+      <div class="marquee-item" id="marquee-text-1">Wear the Haze <span class="dot"></span> Blur the Lines <span class="dot"></span> Own Your Fog <span class="dot"></span> Lost in the Haze <span class="dot"></span> Just. Haze. <span class="dot"></span></div>
+      <div class="marquee-item" id="marquee-text-2">Wear the Haze <span class="dot"></span> Blur the Lines <span class="dot"></span> Own Your Fog <span class="dot"></span> Lost in the Haze <span class="dot"></span> Just. Haze. <span class="dot"></span></div>
       <div class="marquee-item">Wear the Haze <span class="dot"></span> Blur the Lines <span class="dot"></span> Own Your Fog <span class="dot"></span> Lost in the Haze <span class="dot"></span> Just. Haze. <span class="dot"></span></div>
       <div class="marquee-item">Wear the Haze <span class="dot"></span> Blur the Lines <span class="dot"></span> Own Your Fog <span class="dot"></span> Lost in the Haze <span class="dot"></span> Just. Haze. <span class="dot"></span></div>
     </div>
@@ -144,10 +144,10 @@
       <div class="about-grid">
         <div class="about-content">
           <span class="section-label reveal">01 — The Brand</span>
-          <h2 class="section-title reveal reveal-delay-1">Born from<br>a feeling.</h2>
-          <p class="about-text reveal reveal-delay-2">HAZE was born from that moment between dreaming and waking — when the world is soft, blurred, and anything feels possible. We don't make clothes for a demographic. We make them for a mood.</p>
-          <p class="about-text reveal reveal-delay-3">Not fully corporate. Not fully street. Somewhere in between. That's where you live. That's where we are.</p>
-          <p class="about-highlight reveal reveal-delay-4">Just vibes.<br>Just HAZE.</p>
+          <h2 class="section-title reveal reveal-delay-1" id="about-heading">Born from<br>a feeling.</h2>
+          <p class="about-text reveal reveal-delay-2" id="about-text1">HAZE was born from that moment between dreaming and waking — when the world is soft, blurred, and anything feels possible. We don't make clothes for a demographic. We make them for a mood.</p>
+          <p class="about-text reveal reveal-delay-3" id="about-text2">Not fully corporate. Not fully street. Somewhere in between. That's where you live. That's where we are.</p>
+          <p class="about-highlight reveal reveal-delay-4" id="about-highlight">Just vibes.<br>Just HAZE.</p>
         </div>
         <div class="about-image reveal reveal-delay-2">
           <img src="images/product-tee.png" alt="HAZE Oversized Tee" id="about-section-img">
@@ -173,8 +173,8 @@
     <div class="container">
       <div class="products-header">
         <span class="section-label reveal">02 — The Collection</span>
-        <h2 class="section-title reveal reveal-delay-1">Drop 01: Void</h2>
-        <p class="products-subtitle reveal reveal-delay-2">Where darkness meets design. Limited pieces, unlimited vibe.</p>
+        <h2 class="section-title reveal reveal-delay-1" id="shop-title">Drop 01: Void</h2>
+        <p class="products-subtitle reveal reveal-delay-2" id="shop-subtitle">Where darkness meets design. Limited pieces, unlimited vibe.</p>
       </div>
       <div class="products-grid" id="products-grid">
 
@@ -333,8 +333,8 @@
   <!-- BRAND QUOTE -->
   <section class="brand-quote">
     <div class="container">
-      <blockquote class="reveal">Blur the<br>Lines.</blockquote>
-      <p class="quote-author reveal reveal-delay-1">— HAZE, Drop 01: VOID</p>
+      <blockquote class="reveal" id="quote-text">Blur the<br>Lines.</blockquote>
+      <p class="quote-author reveal reveal-delay-1" id="quote-author">— HAZE, Drop 01: VOID</p>
     </div>
   </section>
 
@@ -447,24 +447,54 @@
         }
       }
 
-      // Load Settings for Social Media Links + About Image
+      // Load Settings
       try {
         const settings = await HazeDB.getSettings();
         if (settings) {
+          // Social links
           if (settings.instagram) document.getElementById('social-ig').href = settings.instagram;
           if (settings.facebook)  document.getElementById('social-fb').href = settings.facebook;
           if (settings.tiktok)    document.getElementById('social-tt').href = settings.tiktok;
-          // About section image (editable from admin panel)
+
+          // ── HERO ──────────────────────────────
+          if (settings.heroTitle)   { const el = document.getElementById('hero-title');    if (el) el.textContent = settings.heroTitle; }
+          if (settings.heroTagline) { const el = document.getElementById('hero-tagline');  if (el) el.textContent = settings.heroTagline; }
+          if (settings.heroCTA)     { const el = document.getElementById('hero-cta-text'); if (el) el.textContent = settings.heroCTA; }
+          if (settings.heroBgImage) { const el = document.getElementById('hero-bg-img');   if (el) el.src = settings.heroBgImage; }
+
+          // ── ABOUT ─────────────────────────────
           if (settings.aboutImage) {
-            const aboutImg = document.getElementById('about-section-img');
-            if (aboutImg) aboutImg.src = settings.aboutImage;
+            const el = document.getElementById('about-section-img'); if (el) el.src = settings.aboutImage;
           }
-          // Store tagline
-          if (settings.tagline) {
-            const heroTag = document.querySelector('.hero-tagline');
-            if (heroTag) heroTag.textContent = settings.tagline;
+          if (settings.aboutHeading)   { const el = document.getElementById('about-heading');   if (el) el.innerHTML = settings.aboutHeading; }
+          if (settings.aboutText1)     { const el = document.getElementById('about-text1');     if (el) el.textContent = settings.aboutText1; }
+          if (settings.aboutText2)     { const el = document.getElementById('about-text2');     if (el) el.textContent = settings.aboutText2; }
+          if (settings.aboutHighlight) { const el = document.getElementById('about-highlight'); if (el) el.textContent = settings.aboutHighlight; }
+
+          // ── SHOP ──────────────────────────────
+          if (settings.shopTitle)    { const el = document.getElementById('shop-title');    if (el) el.textContent = settings.shopTitle; }
+          if (settings.shopSubtitle) { const el = document.getElementById('shop-subtitle'); if (el) el.textContent = settings.shopSubtitle; }
+
+          // ── MARQUEE ───────────────────────────
+          if (settings.marqueeText) {
+            const track = document.getElementById('marquee-track');
+            if (track) {
+              track.querySelectorAll('.marquee-item').forEach(function(el) {
+                el.textContent = settings.marqueeText;
+              });
+            }
           }
-          // Load lookbook from settings
+
+          // ── BRAND QUOTE ───────────────────────
+          if (settings.quoteText)   { const el = document.getElementById('quote-text');   if (el) el.innerHTML = settings.quoteText.replace(/\n/g, '<br>'); }
+          if (settings.quoteAuthor) { const el = document.getElementById('quote-author'); if (el) el.textContent = settings.quoteAuthor; }
+
+          // Legacy tagline fallback
+          if (!settings.heroTagline && settings.tagline) {
+            const el = document.getElementById('hero-tagline'); if (el) el.textContent = settings.tagline;
+          }
+
+          // ── LOOKBOOK ──────────────────────────
           let lbItems = settings.lookbookItems;
           if (typeof lbItems === 'string') {
             try { lbItems = JSON.parse(lbItems); } catch(e) { lbItems = null; }
@@ -485,8 +515,8 @@
             }
           }
         }
-
       } catch (e) { console.error('Settings load error:', e); }
+
 
       // Load Products from DB (if any added via Admin Panel)
       try {
