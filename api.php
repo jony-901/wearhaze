@@ -102,6 +102,16 @@ try {
 $inputData = json_decode(file_get_contents('php://input'), true) ?: [];
 $action    = $_GET['action'] ?? $inputData['action'] ?? '';
 
+if ($action === 'migrate_db') {
+    try {
+        $pdo->exec("ALTER TABLE products MODIFY image LONGTEXT");
+        echo json_encode(['ok' => true, 'msg' => 'Database updated successfully. Images will now be stored directly in the database.']);
+    } catch (Exception $e) {
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    }
+    exit();
+}
+
 // ── SETUP ─────────────────────────────────────────────────────────────────────
 if ($action === 'setup') {
     $sqls = [
