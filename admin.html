@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — HAZE</title>
-  <link rel="stylesheet" href="admin.css?v=10.1">
+  <link rel="stylesheet" href="admin.css?v=11">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='85' font-size='80'>⚙️</text></svg>">
   <style>
     #gate-screen{position:fixed;inset:0;background:#0a0a0f;display:flex;align-items:center;justify-content:center;z-index:9999}
@@ -21,13 +21,13 @@
 </head>
 <body>
 
-<!-- GATE SCREEN -->
+<!-- GATE -->
 <div id="gate-screen">
   <div class="gate-box">
     <div class="gate-logo">HAZE</div>
     <div class="gate-sub">Admin Panel</div>
-    <input type="email"    id="gate-email" placeholder="Admin Email" autocomplete="username">
-    <input type="password" id="gate-pass"  placeholder="Password"    autocomplete="current-password">
+    <input type="email" id="gate-email" placeholder="Admin Email" autocomplete="username">
+    <input type="password" id="gate-pass" placeholder="Password" autocomplete="current-password">
     <button id="gate-btn">Login</button>
     <div id="gate-error"></div>
   </div>
@@ -50,7 +50,7 @@
         <div class="sidebar-link" onclick="window.open('index.html','_blank')"><span class="link-icon">🌐</span> View Store</div>
       </nav>
       <div class="sidebar-footer">
-        <div class="sidebar-store-info" id="sidebar-store-info">HAZE Admin</div>
+        <div class="sidebar-store-info" id="sidebar-store-info">HAZE</div>
         <button class="sidebar-logout" id="logout-btn">Logout</button>
       </div>
     </aside>
@@ -63,120 +63,83 @@
     </main>
   </div>
 </div>
-
 <div class="admin-toast" id="admin-toast"></div>
 
-<!-- Scripts: data first, then admin functions, then init — cache busted with timestamp -->
-<script src="data.js?v=10.1"></script>
-<script src="admin.js?v=10.1"></script>
+<script src="data.js?v=11"></script>
+<script src="admin.js?v=11"></script>
 <script>
-/* =====================================================
-   ADMIN GATE — Runs AFTER data.js + admin.js loaded
-   ===================================================== */
-(function() {
-  'use strict';
+(function(){
   var ADMIN_EM = 'wearhaze.com@gmail.com';
 
-  function isLoggedIn() {
-    if (localStorage.getItem('haze_admin_auth') === 'true')   return true;
-    if (sessionStorage.getItem('haze_admin_auth') === 'true') return true;
-    try {
-      var u = JSON.parse(localStorage.getItem('haze_user') || sessionStorage.getItem('haze_user') || 'null');
-      if (u && (u.role === 'admin' || (u.email||'').toLowerCase() === ADMIN_EM)) return true;
-    } catch(e) {}
+  function isLoggedIn(){
+    if(localStorage.getItem('haze_admin_auth')==='true') return true;
+    if(sessionStorage.getItem('haze_admin_auth')==='true') return true;
+    try{
+      var u=JSON.parse(localStorage.getItem('haze_user')||sessionStorage.getItem('haze_user')||'null');
+      if(u&&(u.role==='admin'||(u.email||'').toLowerCase()===ADMIN_EM)) return true;
+    }catch(e){}
     return false;
   }
-
-  function markLoggedIn(user) {
+  function markLoggedIn(user){
     localStorage.setItem('haze_admin_auth','true');
     sessionStorage.setItem('haze_admin_auth','true');
-    if (user) {
-      var s = JSON.stringify(user);
-      localStorage.setItem('haze_user', s);
-      sessionStorage.setItem('haze_user', s);
+    if(user){var s=JSON.stringify(user);localStorage.setItem('haze_user',s);sessionStorage.setItem('haze_user',s);}
+  }
+  function doLogout(){
+    localStorage.removeItem('haze_admin_auth');localStorage.removeItem('haze_user');
+    sessionStorage.removeItem('haze_admin_auth');sessionStorage.removeItem('haze_user');
+    document.getElementById('admin-app').style.display='none';
+    document.getElementById('gate-screen').style.display='flex';
+    document.getElementById('gate-pass').value='';
+    document.getElementById('gate-email').value='';
+    document.getElementById('gate-error').textContent='';
+  }
+  function bootApp(){
+    document.getElementById('gate-screen').style.display='none';
+    document.getElementById('admin-app').style.display='block';
+    if(typeof navigateTo==='function'){
+      navigateTo('dashboard').catch(function(e){console.error('Dashboard error:',e);});
+    } else {
+      document.getElementById('admin-content').innerHTML='<div style="padding:3rem;text-align:center;color:#f87171">admin.js load error. Hard refresh (Ctrl+Shift+R).</div>';
+    }
+    if(typeof HazeDB!=='undefined'){
+      HazeDB.getSettings().then(function(s){if(s&&s.storeName)document.getElementById('sidebar-store-info').textContent=s.storeName;}).catch(function(){});
+      if(typeof updatePendingBadge==='function') updatePendingBadge().catch(function(){});
     }
   }
 
-  function doLogout() {
-    localStorage.removeItem('haze_admin_auth');
-    localStorage.removeItem('haze_user');
-    sessionStorage.removeItem('haze_admin_auth');
-    sessionStorage.removeItem('haze_user');
-    document.getElementById('admin-app').style.display   = 'none';
-    document.getElementById('gate-screen').style.display = 'flex';
-    document.getElementById('gate-pass').value  = '';
-    document.getElementById('gate-email').value = '';
-    document.getElementById('gate-error').textContent = '';
-  }
-
-  function bootApp() {
-    console.log('[HAZE ADMIN] bootApp started');
-    document.getElementById('gate-screen').style.display = 'none';
-    document.getElementById('admin-app').style.display   = 'block';
-
-    // Check that navigateTo exists
-    if (typeof navigateTo !== 'function') {
-      console.error('[HAZE ADMIN] navigateTo function not found! admin.js may not have loaded.');
-      document.getElementById('admin-content').innerHTML =
-        '<div style="padding:3rem;text-align:center;color:#f87171;font-size:1rem">❌ admin.js failed to load. Try hard refresh (Ctrl+Shift+R).</div>';
-      return;
-    }
-
-    // Navigate to dashboard — await not needed, navigateTo handles its own errors
-    navigateTo('dashboard').then(function() {
-      console.log('[HAZE ADMIN] Dashboard loaded');
-    }).catch(function(err) {
-      console.error('[HAZE ADMIN] Dashboard load error:', err);
-    });
-
-    // Load settings in background (non-blocking)
-    if (typeof HazeDB !== 'undefined') {
-      HazeDB.getSettings().then(function(s) {
-        if (s && s.storeName) document.getElementById('sidebar-store-info').textContent = s.storeName;
-      }).catch(function(){});
-      if (typeof updatePendingBadge === 'function') updatePendingBadge().catch(function(){});
-    }
-  }
-
-  // Wire up sidebar nav links
-  document.querySelectorAll('.sidebar-link[data-page]').forEach(function(link) {
-    link.addEventListener('click', function() { navigateTo(link.dataset.page); });
+  // Sidebar nav
+  document.querySelectorAll('.sidebar-link[data-page]').forEach(function(link){
+    link.addEventListener('click',function(){navigateTo(link.dataset.page);});
   });
-  document.getElementById('logout-btn').addEventListener('click', doLogout);
+  document.getElementById('logout-btn').addEventListener('click',doLogout);
 
-  // Gate login button
-  document.getElementById('gate-btn').addEventListener('click', function() {
-    var email  = (document.getElementById('gate-email').value || '').trim().toLowerCase();
-    var pass   = (document.getElementById('gate-pass').value  || '').trim();
-    var errEl  = document.getElementById('gate-error');
-    var btn    = document.getElementById('gate-btn');
-    errEl.textContent = '';
-    if (!email || !pass) { errEl.textContent = 'Email ও Password দিন।'; return; }
-    btn.disabled = true; btn.textContent = 'Logging in...';
-
-    HazeDB.loginUser(email, pass).then(function(res) {
-      if (res && res.ok) { markLoggedIn(res.user); bootApp(); return; }
-      if (email === ADMIN_EM || email.indexOf('admin') >= 0) { markLoggedIn({name:'Admin',email:email,role:'admin'}); bootApp(); return; }
-      errEl.textContent = (res && res.error) || 'Login failed.';
-      btn.disabled = false; btn.textContent = 'Login';
-    }).catch(function(e) {
-      if (email === ADMIN_EM || email.indexOf('admin') >= 0) { markLoggedIn({name:'Admin',email:email,role:'admin'}); bootApp(); return; }
-      errEl.textContent = 'Network error.';
-      btn.disabled = false; btn.textContent = 'Login';
+  // Login
+  document.getElementById('gate-btn').addEventListener('click',function(){
+    var email=(document.getElementById('gate-email').value||'').trim().toLowerCase();
+    var pass=(document.getElementById('gate-pass').value||'').trim();
+    var errEl=document.getElementById('gate-error');
+    var btn=document.getElementById('gate-btn');
+    errEl.textContent='';
+    if(!email||!pass){errEl.textContent='Email ও Password দিন।';return;}
+    btn.disabled=true;btn.textContent='Logging in...';
+    HazeDB.loginUser(email,pass).then(function(res){
+      if(res&&res.ok){markLoggedIn(res.user);bootApp();return;}
+      if(email===ADMIN_EM||email.indexOf('admin')>=0){markLoggedIn({name:'Admin',email:email,role:'admin'});bootApp();return;}
+      errEl.textContent=(res&&res.error)||'Login failed.';
+      btn.disabled=false;btn.textContent='Login';
+    }).catch(function(){
+      if(email===ADMIN_EM||email.indexOf('admin')>=0){markLoggedIn({name:'Admin',email:email,role:'admin'});bootApp();return;}
+      errEl.textContent='Network error.';
+      btn.disabled=false;btn.textContent='Login';
     });
   });
 
-  document.getElementById('gate-pass').addEventListener('keydown',  function(e) { if (e.key==='Enter') document.getElementById('gate-btn').click(); });
-  document.getElementById('gate-email').addEventListener('keydown', function(e) { if (e.key==='Enter') document.getElementById('gate-pass').focus(); });
+  document.getElementById('gate-pass').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('gate-btn').click();});
+  document.getElementById('gate-email').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('gate-pass').focus();});
 
-  // Auto-login if already authenticated
-  console.log('[HAZE ADMIN] Checking auth... isLoggedIn=' + isLoggedIn());
-  if (isLoggedIn()) {
-    bootApp();
-  } else {
-    document.getElementById('gate-email').focus();
-  }
-
+  // Auto-login
+  if(isLoggedIn()){bootApp();}else{document.getElementById('gate-email').focus();}
 })();
 </script>
 </body>
