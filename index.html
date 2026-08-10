@@ -490,6 +490,11 @@
               </div>
             `;
           }).join('');
+          
+          // Show them since they bypass the IntersectionObserver on load
+          setTimeout(() => {
+            grid.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+          }, 50);
         }
       } catch (e) { console.error('Products load error:', e); }
     })();
