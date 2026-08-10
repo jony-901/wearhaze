@@ -791,6 +791,21 @@ async function renderSettings() {
   h += '<div id="social-save-msg" style="margin-top:.5rem;font-size:.8rem;display:none"></div>';
   h += '</div></div></div>';
 
+  // Site Logo
+  h += '<div class="panel" style="border:1px solid rgba(255,184,0,.35);grid-column:1/-1"><div class="panel-header" style="background:rgba(255,184,0,.08)"><div class="panel-title">🏷️ Site Logo (Browser Tab & Google Search)</div></div><div class="panel-body">';
+  h += '<div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">';
+  h += '<div style="text-align:center"><p style="font-size:.75rem;color:var(--ash);margin-bottom:.5rem">Current Logo</p>';
+  h += '<img id="logo-preview" src="images/logo.png?v=' + Date.now() + '" style="height:80px;width:80px;object-fit:contain;border-radius:8px;border:1px solid rgba(255,184,0,.3);background:rgba(0,0,0,.3)">';
+  h += '</div>';
+  h += '<div style="flex:1;min-width:200px">';
+  h += '<p style="font-size:.82rem;color:var(--smoke);margin-bottom:1rem">এখানে আপনার logo upload করুন। এটা browser tab icon এবং Google search-এ দেখাবে।</p>';
+  h += '<label style="display:block;cursor:pointer;background:var(--accent);color:#fff;padding:.7rem 1.2rem;border-radius:6px;font-size:.82rem;font-weight:700;text-align:center;width:fit-content" id="logo-upload-label">';
+  h += '📁 Choose Logo File';
+  h += '<input type="file" id="logo-file-input" accept="image/*" style="display:none" onchange="uploadSiteLogo(this)">';
+  h += '</label>';
+  h += '<div id="logo-upload-status" style="margin-top:.6rem;font-size:.82rem;font-weight:600;min-height:1.2em"></div>';
+  h += '</div></div></div></div>';
+
 
 
 
@@ -957,6 +972,38 @@ function previewNewLookbook(input) {
     img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+async function uploadSiteLogo(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var status = document.getElementById('logo-upload-status');
+  var lbl    = document.getElementById('logo-upload-label');
+  status.textContent = '⏳ Uploading...';
+  status.style.color = 'var(--accent)';
+  if (lbl) lbl.style.opacity = '0.6';
+  var formData = new FormData();
+  formData.append('logo', file);
+  try {
+    var res  = await fetch('api.php?action=upload_logo', { method: 'POST', body: formData });
+    var data = await res.json();
+    if (data.ok) {
+      status.textContent = '✓ Logo saved! Browser tab icon updated.';
+      status.style.color = '#4ade80';
+      var preview = document.getElementById('logo-preview');
+      if (preview) preview.src = data.url;
+      toast('✓ Site logo updated!');
+    } else {
+      status.textContent = '✗ ' + (data.error || 'Upload failed');
+      status.style.color = '#f87171';
+      toast('Error: ' + (data.error || 'Upload failed'), 'error');
+    }
+  } catch(e) {
+    status.textContent = '✗ Network error: ' + e.message;
+    status.style.color = '#f87171';
+    toast('Error: ' + e.message, 'error');
+  }
+  if (lbl) lbl.style.opacity = '1';
 }
 
 async function addLookbookItem() {

@@ -57,6 +57,36 @@ if (isset($_GET['action']) && $_GET['action'] === 'upload_image') {
     exit();
     exit();
 }
+
+// ── LOGO UPLOAD ───────────────────────────────────────────────────────────────
+if (isset($_GET['action']) && $_GET['action'] === 'upload_logo') {
+    header('Content-Type: application/json');
+    if (empty($_FILES['logo']['tmp_name'])) {
+        echo json_encode(['ok' => false, 'error' => 'No file received.']);
+        exit();
+    }
+    $file    = $_FILES['logo'];
+    $allowed = ['image/jpeg','image/png','image/webp','image/jpg'];
+    $mime    = mime_content_type($file['tmp_name']);
+    if (!in_array($mime, $allowed)) {
+        echo json_encode(['ok' => false, 'error' => 'Invalid file type: ' . $mime]);
+        exit();
+    }
+    if ($file['size'] > 5 * 1024 * 1024) {
+        echo json_encode(['ok' => false, 'error' => 'File too large (max 5MB)']);
+        exit();
+    }
+    // Save directly as images/logo.png (overwrites existing)
+    $imgDir  = __DIR__ . '/images/';
+    if (!is_dir($imgDir)) @mkdir($imgDir, 0755, true);
+    $dest = $imgDir . 'logo.png';
+    if (move_uploaded_file($file['tmp_name'], $dest)) {
+        echo json_encode(['ok' => true, 'url' => 'images/logo.png?v=' . time()]);
+    } else {
+        echo json_encode(['ok' => false, 'error' => 'Could not save logo. Check folder permissions.']);
+    }
+    exit();
+}
 if (isset($_GET['action']) && $_GET['action'] === 'list_uploads') {
     $dir = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/uploads/products/';
     if (!is_dir($dir)) {
