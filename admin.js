@@ -485,16 +485,26 @@ async function generateAIProductDetails(base64Image) {
             { text: "Act as a modern streetwear clothing brand copywriter. Analyze this clothing item. Give me a JSON object with 'name' (a short, catchy product name) and 'description' (a brief 1-2 sentence description highlighting the style and vibe). No markdown, just raw JSON." },
             { inline_data: { mime_type: mime, data: b64Data } }
           ]
-        }]
+        }],
+        generationConfig: {
+          response_mime_type: "application/json"
+        }
       })
     });
     
     var data = await res.json();
-    if (data.error) throw new Error(data.error.message);
+    if (!res.ok || data.error) throw new Error((data.error && data.error.message) || 'API Request Failed');
+    if (!data.candidates || !data.candidates[0]) throw new Error('No response from AI (Safety block or empty)');
     
     var text = data.candidates[0].content.parts[0].text;
-    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    var result = JSON.parse(text);
+    var result;
+    try {
+      result = JSON.parse(text);
+    } catch(err) {
+      // fallback cleanup just in case
+      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      result = JSON.parse(text);
+    }
     
     if (result.name) nameEl.value = result.name;
     if (result.description) descEl.value = result.description;
@@ -505,8 +515,8 @@ async function generateAIProductDetails(base64Image) {
     
   } catch(e) {
     console.error('AI Error:', e);
-    status.textContent = '✓ Photo loaded! (AI suggestion failed)';
-    status.style.color = '#4ade80';
+    status.innerHTML = '⚠️ AI Failed: <span style="font-size:0.7rem">' + e.message + '</span>';
+    status.style.color = '#f87171'; // red
   }
 }
 
