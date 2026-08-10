@@ -101,7 +101,7 @@
   <!-- NAVBAR -->
   <nav class="navbar" id="navbar">
     <div class="container">
-      <a href="#home" class="nav-logo">HAZE</a>
+      <a href="#home" class="nav-logo" id="nav-logo">HAZE</a>
       <div class="nav-links">
         <a href="#about">About</a>
         <a href="#products">Shop</a>
@@ -470,6 +470,17 @@
   <script src="cart.js?v=11"></script>
   <script src="script.js?v=11"></script>
   <script>
+    // ── NAVBAR LOGO UPDATER (global) ─────────────────────
+    function updateNavLogo(settings) {
+      var el = document.getElementById('nav-logo');
+      if (!el) return;
+      if (settings.navLogoImage && settings.navLogoImage.length > 10) {
+        el.innerHTML = '<img src="' + settings.navLogoImage + '" alt="Logo" style="height:36px;max-width:100px;object-fit:contain;display:block;border-radius:4px">';
+      } else {
+        el.textContent = settings.navLogoText || 'HAZE';
+      }
+    }
+
     // ── USER AUTH & SETTINGS NAV ─────────────────────────
     (async function initPageData() {
       const user = HazeDB.getCurrentUser();
@@ -492,6 +503,9 @@
           if (settings.instagram) document.getElementById('social-ig').href = settings.instagram;
           if (settings.facebook)  document.getElementById('social-fb').href = settings.facebook;
           if (settings.tiktok)    document.getElementById('social-tt').href = settings.tiktok;
+
+          // ── NAVBAR LOGO ───────────────────────
+          updateNavLogo(settings);
 
           // ── HERO ──────────────────────────────
           if (settings.heroTitle)   { const el = document.getElementById('hero-title');    if (el) el.textContent = settings.heroTitle; }

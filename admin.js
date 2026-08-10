@@ -602,6 +602,17 @@ async function renderContent() {
 
   var h = '';
 
+  // NAVBAR LOGO
+  var navLogoHtml = '';
+  navLogoHtml += '<p style="font-size:.8rem;color:var(--ash);margin-bottom:.8rem">Navbar-এ যে লোগো/টেক্সট দেখায় সেটা এখান থেকে পরিবর্তন করুন। Image দিলে image দেখাবে, না দিলে text দেখাবে।</p>';
+  navLogoHtml += field('c-nav-logo-text', '🔤 Logo Text (যেমন: HAZE)', s.navLogoText || 'HAZE');
+  navLogoHtml += '<label style="font-size:.75rem;color:var(--ash);display:block;margin-top:.8rem;margin-bottom:.25rem">🖼️ Logo Image (থাকলে text-এর বদলে image দেখাবে)</label>';
+  navLogoHtml += imgUploadBox('nav-logo-preview', 'nav-logo-file', s.navLogoImage||'', 'contentUploadNavLogo');
+  if (s.navLogoImage) {
+    navLogoHtml += '<button type="button" onclick="clearNavLogo()" style="margin-top:.5rem;background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3);padding:.4rem .9rem;border-radius:4px;font-size:.75rem;cursor:pointer">🗑️ Remove Image (text এ ফিরে যাও)</button>';
+  }
+  h += panel('🔷', 'Navbar Logo', navLogoHtml, 'save-nav-logo-btn', 'saveContentNavLogo');
+
   // HERO
   var heroHtml = '';
   heroHtml += field('c-hero-title',   '🔤 Brand Name / Headline',    s.heroTitle   || 'HAZE');
@@ -690,6 +701,44 @@ function contentUploadAbout(input) {
     await HazeDB.updateSettings({ aboutImage: b64 });
     toast('✓ About image updated!');
   });
+}
+
+async function saveContentNavLogo() {
+  try {
+    var text  = document.getElementById('c-nav-logo-text').value.trim() || 'HAZE';
+    var img   = document.getElementById('nav-logo-preview');
+    var imgSrc = (img && img.tagName === 'IMG') ? img.src : '';
+    // Only save image if it's a real data/url (not the placeholder div)
+    var imgVal = (imgSrc && imgSrc !== window.location.href) ? imgSrc : '';
+    await HazeDB.updateSettings({ navLogoText: text, navLogoImage: imgVal });
+    // Update navbar immediately on this tab
+    updateNavLogo({ navLogoText: text, navLogoImage: imgVal });
+    toast('✓ Navbar logo saved!');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+function contentUploadNavLogo(input) {
+  if (!input.files[0]) return;
+  contentCompressImage(input.files[0], async function(b64) {
+    // Show preview
+    var prev = document.getElementById('nav-logo-preview');
+    if (prev) {
+      var img = new Image();
+      img.src = b64;
+      img.style = 'height:70px;width:90px;object-fit:contain;border-radius:4px;border:1px solid rgba(139,92,246,.3)';
+      img.id = 'nav-logo-preview';
+      prev.parentNode.replaceChild(img, prev);
+    }
+  });
+}
+
+async function clearNavLogo() {
+  try {
+    await HazeDB.updateSettings({ navLogoImage: '' });
+    updateNavLogo({ navLogoImage: '', navLogoText: document.getElementById('c-nav-logo-text')?.value || 'HAZE' });
+    toast('✓ Logo image removed!');
+    await renderContent();
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
 async function saveContentHero() {
