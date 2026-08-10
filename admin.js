@@ -631,11 +631,26 @@ async function renderContent() {
   var marqHtml = textarea('c-marquee', '📢 Running Text (dots will separate each phrase)', s.marqueeText || 'Wear the Haze · Blur the Lines · Own Your Fog · Lost in the Haze · Just. Haze.');
   h += panel('💬', 'Marquee (Running Banner)', marqHtml, 'save-marq-btn', 'saveContentMarquee');
 
+  // STATS
+  var statsHtml = '';
+  statsHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">';
+  statsHtml += field('c-stat1-num', 'Stat 1 Number', s.stat1Num || '5');
+  statsHtml += field('c-stat1-label', 'Stat 1 Label', s.stat1Label || 'Products in Drop 01');
+  statsHtml += field('c-stat2-num', 'Stat 2 Number', s.stat2Num || '100');
+  statsHtml += field('c-stat2-label', 'Stat 2 Label', s.stat2Label || 'Cotton Premium');
+  statsHtml += field('c-stat3-num', 'Stat 3 Number', s.stat3Num || '850');
+  statsHtml += field('c-stat3-label', 'Stat 3 Label', s.stat3Label || 'Starting Price');
+  statsHtml += field('c-stat4-num', 'Stat 4 Number', s.stat4Num || '2026');
+  statsHtml += field('c-stat4-label', 'Stat 4 Label', s.stat4Label || 'Established');
+  statsHtml += '</div>';
+  h += panel('📊', 'Stats Section', statsHtml, 'save-stats-btn', 'saveContentStats');
+
   // BRAND QUOTE
   var quoteHtml = '';
   quoteHtml += field('c-quote-text',   '💬 Quote Text',   s.quoteText   || 'Blur the\nLines.');
   quoteHtml += field('c-quote-author', '✍️ Author/Credit', s.quoteAuthor || '— HAZE, Drop 01: VOID');
   h += panel('✨', 'Brand Quote Section', quoteHtml, 'save-quote-btn', 'saveContentQuote');
+
 
   c.innerHTML = '<div style="max-width:720px">' + h + '</div>';
 }
@@ -714,6 +729,22 @@ async function saveContentMarquee() {
   try {
     await HazeDB.updateSettings({ marqueeText: document.getElementById('c-marquee').value.trim() });
     toast('✓ Marquee text saved!');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function saveContentStats() {
+  try {
+    await HazeDB.updateSettings({
+      stat1Num: document.getElementById('c-stat1-num').value.trim(),
+      stat1Label: document.getElementById('c-stat1-label').value.trim(),
+      stat2Num: document.getElementById('c-stat2-num').value.trim(),
+      stat2Label: document.getElementById('c-stat2-label').value.trim(),
+      stat3Num: document.getElementById('c-stat3-num').value.trim(),
+      stat3Label: document.getElementById('c-stat3-label').value.trim(),
+      stat4Num: document.getElementById('c-stat4-num').value.trim(),
+      stat4Label: document.getElementById('c-stat4-label').value.trim()
+    });
+    toast('✓ Stats saved!');
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 

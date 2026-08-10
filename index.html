@@ -160,10 +160,10 @@
   <section class="stats">
     <div class="container">
       <div class="stats-grid">
-        <div class="stat-item reveal"><div class="stat-number" data-target="5" data-suffix="+">0</div><div class="stat-label">Products in Drop 01</div></div>
-        <div class="stat-item reveal reveal-delay-1"><div class="stat-number" data-target="100" data-suffix="%">0</div><div class="stat-label">Cotton Premium</div></div>
-        <div class="stat-item reveal reveal-delay-2"><div class="stat-number" data-target="850" data-prefix="৳">0</div><div class="stat-label">Starting Price</div></div>
-        <div class="stat-item reveal reveal-delay-3"><div class="stat-number" data-target="2026">0</div><div class="stat-label">Established</div></div>
+        <div class="stat-item reveal"><div class="stat-number" id="stat1-num" data-target="5" data-suffix="+">0</div><div class="stat-label" id="stat1-label">Products in Drop 01</div></div>
+        <div class="stat-item reveal reveal-delay-1"><div class="stat-number" id="stat2-num" data-target="100" data-suffix="%">0</div><div class="stat-label" id="stat2-label">Cotton Premium</div></div>
+        <div class="stat-item reveal reveal-delay-2"><div class="stat-number" id="stat3-num" data-target="850" data-prefix="৳">0</div><div class="stat-label" id="stat3-label">Starting Price</div></div>
+        <div class="stat-item reveal reveal-delay-3"><div class="stat-number" id="stat4-num" data-target="2026">0</div><div class="stat-label" id="stat4-label">Established</div></div>
       </div>
     </div>
   </section>
@@ -474,6 +474,16 @@
           // ── SHOP ──────────────────────────────
           if (settings.shopTitle)    { const el = document.getElementById('shop-title');    if (el) el.textContent = settings.shopTitle; }
           if (settings.shopSubtitle) { const el = document.getElementById('shop-subtitle'); if (el) el.textContent = settings.shopSubtitle; }
+
+          // ── STATS ─────────────────────────────
+          if (settings.stat1Num)   { const el = document.getElementById('stat1-num');   if (el) el.dataset.target = settings.stat1Num; }
+          if (settings.stat1Label) { const el = document.getElementById('stat1-label'); if (el) el.textContent = settings.stat1Label; }
+          if (settings.stat2Num)   { const el = document.getElementById('stat2-num');   if (el) el.dataset.target = settings.stat2Num; }
+          if (settings.stat2Label) { const el = document.getElementById('stat2-label'); if (el) el.textContent = settings.stat2Label; }
+          if (settings.stat3Num)   { const el = document.getElementById('stat3-num');   if (el) el.dataset.target = settings.stat3Num; }
+          if (settings.stat3Label) { const el = document.getElementById('stat3-label'); if (el) el.textContent = settings.stat3Label; }
+          if (settings.stat4Num)   { const el = document.getElementById('stat4-num');   if (el) el.dataset.target = settings.stat4Num; }
+          if (settings.stat4Label) { const el = document.getElementById('stat4-label'); if (el) el.textContent = settings.stat4Label; }
 
           // ── MARQUEE ───────────────────────────
           if (settings.marqueeText) {
