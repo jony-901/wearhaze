@@ -791,17 +791,7 @@ async function renderSettings() {
   h += '<div id="social-save-msg" style="margin-top:.5rem;font-size:.8rem;display:none"></div>';
   h += '</div></div></div>';
 
-  // About Image
-  h += '<div class="panel" style="border:1px solid rgba(139,92,246,.3)"><div class="panel-header" style="background:rgba(139,92,246,.08)"><div class="panel-title">🖼️ About Section — ছবি পরিবর্তন</div></div><div class="panel-body">';
-  h += '<p style="font-size:.8rem;color:var(--ash);margin-bottom:1rem">এখানে যে ছবি দেবেন সেটাই About Section-এ দেখাবে</p>';
-  if (s.aboutImage) h += '<div style="margin-bottom:1rem;text-align:center"><img src="' + s.aboutImage + '" style="max-height:140px;max-width:100%;object-fit:contain;border:1px solid rgba(139,92,246,.2);border-radius:4px"></div>';
-  h += '<div class="admin-form"><div class="form-field">';
-  h += '<button type="button" class="btn btn-primary" onclick="document.getElementById(\'about-img-file\').click()" style="width:100%;padding:.8rem;font-weight:600">📁 Choose New Photo</button>';
-  h += '<input type="file" id="about-img-file" accept="image/*" style="display:none" onchange="uploadAboutImage(this)">';
-  h += '<div id="about-img-status" style="font-size:.8rem;margin-top:.5rem;min-height:1em;font-weight:600"></div></div>';
-  h += '<div class="form-field"><label>অথবা Image URL</label><input type="text" id="s-about-img" value="' + (s.aboutImage||'') + '" placeholder="https://..."></div>';
-  h += '<button class="btn btn-primary" style="width:100%" onclick="saveAboutImageSettings()">💾 Save About Image</button>';
-  h += '</div></div></div>';
+
 
 
   h += '</div>'; // end 2-col grid
@@ -1026,41 +1016,7 @@ async function saveSocialSettings() {
   if (btn) { btn.disabled = false; btn.textContent = '💾 Save Social Links'; }
 }
 
-async function uploadAboutImage(input) {
-  var file = input.files[0];
-  if (!file) return;
-  var status = document.getElementById('about-img-status');
-  status.textContent = '⏳ Uploading...';
-  status.style.color = 'var(--accent)';
-  var formData = new FormData();
-  formData.append('image', file);
-  try {
-    var res = await fetch('api.php?action=upload_image', {method:'POST', body:formData});
-    var data = await res.json();
-    if (data.ok) {
-      document.getElementById('s-about-img').value = data.url;
-      status.textContent = '✓ Uploaded! Click Save.';
-      status.style.color = '#4ade80';
-      return;
-    }
-  } catch(e) {}
-  var reader = new FileReader();
-  reader.onload = function(ev) {
-    document.getElementById('s-about-img').value = ev.target.result;
-    status.textContent = '✓ Ready! Click Save.';
-    status.style.color = '#4ade80';
-  };
-  reader.readAsDataURL(file);
-}
 
-async function saveAboutImageSettings() {
-  var url = document.getElementById('s-about-img').value.trim();
-  if (!url) { toast('ছবি দেননি', 'error'); return; }
-  try {
-    await HazeDB.updateSettings({aboutImage: url});
-    toast('✓ About image saved!');
-  } catch(e) { toast('Error: ' + e.message, 'error'); }
-}
 
 
 
