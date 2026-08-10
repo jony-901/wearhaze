@@ -394,6 +394,8 @@ try {
         break;
 
     case 'update_settings':
+        // Auto-fix column type for Base64 images in case user missed the migration URL
+        try { $pdo->exec("ALTER TABLE settings MODIFY setting_value LONGTEXT"); } catch(Exception $e){}
         if (empty($inputData['settings']) || !is_array($inputData['settings'])) {
             echo json_encode(['ok'=>false,'error'=>'No settings data']); break;
         }
