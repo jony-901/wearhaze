@@ -503,7 +503,7 @@ async function showProductModal(productId = null) {
               </select>
               <input type="text" id="pf-category-custom"
                 style="margin-top:0.4rem;display:${!['tops','bottoms','accessories','outerwear','footwear'].includes(p.category)?'block':'none'}"
-                value="${!['tops','bottoms','accessories','outerwear','footwear'].includes(p.category)?p.category:'"}"
+                value="${!['tops','bottoms','accessories','outerwear','footwear'].includes(p.category)?(p.category||''):''}"
                 placeholder="Custom category লিখুন (e.g. Joggers)">
             </div>
           </div>
