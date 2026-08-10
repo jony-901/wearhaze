@@ -55,6 +55,30 @@ if (isset($_GET['action']) && $_GET['action'] === 'upload_image') {
         echo json_encode(['ok' => false, 'error' => 'move_uploaded_file failed. Dest: ' . $dest]);
     }
     exit();
+    exit();
+}
+if (isset($_GET['action']) && $_GET['action'] === 'list_uploads') {
+    $dir = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/uploads/products/';
+    if (!is_dir($dir)) {
+        $dir = __DIR__ . '/uploads/products/';
+    }
+    if (is_dir($dir)) {
+        $files = scandir($dir);
+        $result = [];
+        foreach($files as $f) {
+            if($f!=='.' && $f!=='..') {
+                $result[] = [
+                    'name' => $f,
+                    'size' => filesize($dir . $f),
+                    'perms' => substr(sprintf('%o', fileperms($dir . $f)), -4),
+                ];
+            }
+        }
+        echo json_encode($result);
+    } else {
+        echo json_encode(['error' => 'dir not found: ' . $dir]);
+    }
+    exit();
 }
 
 header('Content-Type: application/json');
