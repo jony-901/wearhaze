@@ -772,21 +772,6 @@ async function renderSettings() {
   h += '<button class="btn btn-primary" style="width:100%" onclick="saveAboutImageSettings()">💾 Save About Image</button>';
   h += '</div></div></div>';
 
-  // AI Settings
-  h += '<div class="panel" style="border:1px solid rgba(74,222,128,.3)"><div class="panel-header" style="background:rgba(74,222,128,.1)"><div class="panel-title">🤖 AI Auto-Suggest (Gemini API)</div></div><div class="panel-body">';
-  h += '<p style="font-size:.8rem;color:var(--ash);margin-bottom:1rem">প্রোডাক্ট ছবি আপলোড করলে AI নিজে থেকে নাম ও ডেসক্রিপশন সাজেস্ট করবে। এর জন্য একটি ফ্রি Gemini API Key প্রয়োজন।</p>';
-  h += '<div class="admin-form"><div class="form-field"><label>Gemini API Key</label><input type="password" id="s-gemini-key" value="' + (s.geminiKey||'') + '" placeholder="AIzaSy..."></div>';
-  h += '<button class="btn btn-primary" style="width:100%" onclick="saveAISettings()">💾 Save API Key</button>';
-  h += '<div style="margin-top:1rem;font-size:.75rem;color:var(--smoke)">API Key নেই? <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent);text-decoration:none">এখান থেকে ফ্রি তৈরি করুন</a>।</div>';
-  h += '</div></div></div>';
-
-  // ImgBB Settings
-  h += '<div class="panel" style="border:1px solid rgba(59,130,246,.3)"><div class="panel-header" style="background:rgba(59,130,246,.1)"><div class="panel-title">☁️ Image Hosting (ImgBB API)</div></div><div class="panel-body">';
-  h += '<p style="font-size:.8rem;color:var(--ash);margin-bottom:1rem">Hostinger আপডেট করার সময় অনেকসময় লোকাল ছবি ডিলিট হয়ে যায়। ImgBB ব্যবহার করলে ছবি চিরকাল সেভ থাকবে।</p>';
-  h += '<div class="admin-form"><div class="form-field"><label>ImgBB API Key</label><input type="password" id="s-imgbb-key" value="' + (s.imgbbKey||'') + '" placeholder="e.g. 9b7a..."></div>';
-  h += '<button class="btn btn-primary" style="width:100%" onclick="saveImgBBSettings()">💾 Save ImgBB Key</button>';
-  h += '<div style="margin-top:1rem;font-size:.75rem;color:var(--smoke)">API Key নেই? <a href="https://api.imgbb.com/" target="_blank" style="color:var(--accent);text-decoration:none">এখান থেকে ফ্রি তৈরি করুন</a>।</div>';
-  h += '</div></div></div>';
 
   h += '</div>'; // end 2-col grid
 
@@ -1046,21 +1031,7 @@ async function saveAboutImageSettings() {
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
-async function saveAISettings() {
-  var key = document.getElementById('s-gemini-key').value.trim();
-  try {
-    await HazeDB.updateSettings({geminiKey: key});
-    toast('✓ Gemini API Key saved!');
-  } catch(e) { toast('Error: ' + e.message, 'error'); }
-}
 
-async function saveImgBBSettings() {
-  var key = document.getElementById('s-imgbb-key').value.trim();
-  try {
-    await HazeDB.updateSettings({imgbbKey: key});
-    toast('✓ ImgBB API Key saved!');
-  } catch(e) { toast('Error: ' + e.message, 'error'); }
-}
 
 /* ══════════════════════════════════════════════════
    COUPONS
