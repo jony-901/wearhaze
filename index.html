@@ -429,7 +429,7 @@
     </div>
   </div>
 
-  <script src="data.js?v=11"></script>
+  <script src="data.js?v=14"></script>
   <script src="cart.js?v=11"></script>
   <script src="script.js?v=11"></script>
   <script>
@@ -465,10 +465,14 @@
             if (heroTag) heroTag.textContent = settings.tagline;
           }
           // Load lookbook from settings
-          if (settings.lookbookItems && settings.lookbookItems.length > 0) {
+          let lbItems = settings.lookbookItems;
+          if (typeof lbItems === 'string') {
+            try { lbItems = JSON.parse(lbItems); } catch(e) { lbItems = null; }
+          }
+          if (lbItems && Array.isArray(lbItems) && lbItems.length > 0) {
             const lbGrid = document.getElementById('lookbook-grid');
             if (lbGrid) {
-              lbGrid.innerHTML = settings.lookbookItems.map((item, i) => `
+              lbGrid.innerHTML = lbItems.map((item) => `
                 <div class="lookbook-item reveal" onclick="goToCategory('${item.category || ''}')">
                   <img src="${item.img}" alt="HAZE Lookbook — ${item.label}" loading="lazy">
                   <span class="lookbook-label">${item.label}</span>
@@ -481,6 +485,7 @@
             }
           }
         }
+
       } catch (e) { console.error('Settings load error:', e); }
 
       // Load Products from DB (if any added via Admin Panel)

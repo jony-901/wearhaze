@@ -633,12 +633,18 @@ async function renderSettings() {
   h += '</div>'; // end 2-col grid
 
   // --- LOOKBOOK MANAGER (full width below) ---
-  var lookbookItems = s.lookbookItems || [
-    { id: 'lb-tshirt', img: 'images/product-tee.png',    label: 'T-Shirt', category: 't-shirt' },
-    { id: 'lb-hoodie', img: 'images/product-hoodie.png', label: 'Hoodie',  category: 'hoodie'  },
-    { id: 'lb-cargo',  img: 'images/product-cargo.png',  label: 'Cargo',   category: 'cargo'   },
-    { id: 'lb-cap',    img: 'images/product-cap.png',    label: 'Cap',     category: 'cap'     }
-  ];
+  var lookbookItems = s.lookbookItems;
+  if (typeof lookbookItems === 'string') {
+    try { lookbookItems = JSON.parse(lookbookItems); } catch(e) { lookbookItems = null; }
+  }
+  if (!lookbookItems || !Array.isArray(lookbookItems)) {
+    lookbookItems = [
+      { id: 'lb-tshirt', img: 'images/product-tee.png',    label: 'T-Shirt', category: 't-shirt' },
+      { id: 'lb-hoodie', img: 'images/product-hoodie.png', label: 'Hoodie',  category: 'hoodie'  },
+      { id: 'lb-cargo',  img: 'images/product-cargo.png',  label: 'Cargo',   category: 'cargo'   },
+      { id: 'lb-cap',    img: 'images/product-cap.png',    label: 'Cap',     category: 'cap'     }
+    ];
+  }
 
   h += '<div class="panel" style="border:1px solid rgba(139,92,246,.4);margin-top:1.5rem">';
   h += '<div class="panel-header" style="background:rgba(139,92,246,.1)"><div class="panel-title">🖼️ Lookbook Manager</div></div>';
@@ -698,7 +704,11 @@ async function renderSettings() {
 
 async function getLookbookItems() {
   var s = (await HazeDB.getSettings()) || {};
-  return s.lookbookItems || [
+  var items = s.lookbookItems;
+  if (typeof items === 'string') {
+    try { items = JSON.parse(items); } catch(e) { items = null; }
+  }
+  return items || [
     { id: 'lb-tshirt', img: 'images/product-tee.png',    label: 'T-Shirt', category: 't-shirt' },
     { id: 'lb-hoodie', img: 'images/product-hoodie.png', label: 'Hoodie',  category: 'hoodie'  },
     { id: 'lb-cargo',  img: 'images/product-cargo.png',  label: 'Cargo',   category: 'cargo'   },
@@ -730,7 +740,7 @@ function changeLookbookPhoto(input, idx) {
       try {
         var items = await getLookbookItems();
         items[idx].img = b64;
-        await HazeDB.updateSettings({ lookbookItems: items });
+        await HazeDB.updateSettings({ lookbookItems: JSON.stringify(items) });
         toast('✓ Photo changed!');
       } catch(e) { toast('Error: ' + e.message, 'error'); }
     };
@@ -744,7 +754,7 @@ async function saveLookbookItem(idx) {
     var items = await getLookbookItems();
     items[idx].label    = document.getElementById('lb-label-' + idx).value.trim();
     items[idx].category = document.getElementById('lb-cat-' + idx).value;
-    await HazeDB.updateSettings({ lookbookItems: items });
+    await HazeDB.updateSettings({ lookbookItems: JSON.stringify(items) });
     toast('✓ Lookbook item saved!');
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
@@ -754,7 +764,7 @@ async function deleteLookbookItem(idx) {
   try {
     var items = await getLookbookItems();
     items.splice(idx, 1);
-    await HazeDB.updateSettings({ lookbookItems: items });
+    await HazeDB.updateSettings({ lookbookItems: JSON.stringify(items) });
     toast('✓ Deleted!');
     await renderSettings();
   } catch(e) { toast('Error: ' + e.message, 'error'); }
@@ -794,7 +804,7 @@ async function addLookbookItem() {
   try {
     var items = await getLookbookItems();
     items.push({ id: 'lb-' + Date.now(), img: imgData, label: label, category: cat });
-    await HazeDB.updateSettings({ lookbookItems: items });
+    await HazeDB.updateSettings({ lookbookItems: JSON.stringify(items) });
     toast('✓ Lookbook item added!');
     await renderSettings();
   } catch(e) { toast('Error: ' + e.message, 'error'); }
