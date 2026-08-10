@@ -1,10 +1,11 @@
 /* ═══════════════════════════════════════════════════════
-   HAZE — admin.js  |  Full Admin Panel Logic (Async)
+   HAZE — admin.js  v10.1 | Complete Admin Panel Logic
    ═══════════════════════════════════════════════════════ */
 
 /* ── UTILS ────────────────────────────────────────────── */
 function toast(msg, type = 'success') {
   const el = document.getElementById('admin-toast');
+  if (!el) return;
   el.textContent = msg;
   el.className = `admin-toast ${type} show`;
   setTimeout(() => el.classList.remove('show'), 3000);
@@ -30,8 +31,7 @@ function updateTime() {
   const el = document.getElementById('header-time');
   if (el) el.textContent = new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
 }
-setInterval(updateTime, 1000);
-updateTime();
+setInterval(updateTime, 60000);
 
 /* ── PENDING BADGE ────────────────────────────────────── */
 async function updatePendingBadge() {
@@ -46,38 +46,42 @@ async function updatePendingBadge() {
   } catch(e) {}
 }
 
-
-
-
-
-
+/* ── NAVIGATION ───────────────────────────────────────── */
 async function navigateTo(page) {
-  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-  const activeLink = document.querySelector(`.sidebar-link[data-page="${page}"]`);
-  if (activeLink) activeLink.classList.add('active');
-
-  const titles = { dashboard:'Dashboard', orders:'Orders', products:'Products', coupons:'🏷️ Coupons', settings:'Settings' };
-  document.getElementById('page-title').textContent = titles[page] || page;
-
-  const content = document.getElementById('admin-content');
-  content.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--ash)">Loading...</div>';
-
   try {
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    const activeLink = document.querySelector(`.sidebar-link[data-page="${page}"]`);
+    if (activeLink) activeLink.classList.add('active');
+
+    const titleEl = document.getElementById('page-title');
+    if (titleEl) {
+      const titles = { dashboard:'Dashboard', orders:'Orders', products:'Products', coupons:'Coupons', settings:'Settings' };
+      titleEl.textContent = titles[page] || page;
+    }
+
+    const content = document.getElementById('admin-content');
+    if (!content) { console.error('admin-content element not found!'); return; }
+
+    content.innerHTML = '<div style="padding:3rem;text-align:center;color:#9d8fc0;font-size:1rem">⏳ Loading...</div>';
+
     if (page === 'dashboard') await renderDashboard();
     else if (page === 'orders')   await renderOrders();
     else if (page === 'products') await renderProducts();
     else if (page === 'coupons')  await renderCoupons();
     else if (page === 'settings') await renderSettings();
+
   } catch (err) {
-    console.error('Page render error:', err);
-    content.innerHTML = `
-      <div style="padding:3rem 1.5rem;text-align:center">
-        <div style="font-size:2.5rem;margin-bottom:0.5rem">⚠️</div>
-        <div style="font-size:1.1rem;color:var(--ghost);font-weight:700">Error loading ${page}</div>
-        <div style="font-size:0.85rem;color:var(--smoke);margin-top:0.4rem">${err.message || 'Database error'}</div>
-        <button class="btn btn-primary" onclick="navigateTo('${page}')" style="margin-top:1.2rem">Retry</button>
-      </div>
-    `;
+    console.error('navigateTo error:', err);
+    const content = document.getElementById('admin-content');
+    if (content) {
+      content.innerHTML = `
+        <div style="padding:3rem;text-align:center">
+          <div style="font-size:2rem;margin-bottom:1rem">⚠️</div>
+          <div style="color:#e8e0f0;font-weight:700;margin-bottom:.5rem">Error: ${page}</div>
+          <div style="color:#9d8fc0;font-size:.85rem;margin-bottom:1.5rem">${err.message || 'Unknown error'}</div>
+          <button onclick="navigateTo('${page}')" style="background:#8b5cf6;color:white;border:none;padding:.7rem 1.5rem;cursor:pointer;font-size:.85rem">Retry</button>
+        </div>`;
+    }
   }
 }
 
@@ -85,53 +89,85 @@ async function navigateTo(page) {
    DASHBOARD
 ══════════════════════════════════════════════════════ */
 async function renderDashboard() {
-  // Safe defaults in case API is unavailable
-  let analytics = {
-    totalRevenue: 0, totalOrders: 0, pendingOrders: 0, deliveredOrders: 0,
-    totalProducts: 0, totalStock: 0,
-    revenueByDay: [], topProducts: [], recentOrders: [], statusCounts: {}
-  };
-  try {
-    const a = await HazeDB.getAnalytics();
-    if (a) analytics = a;
-  } catch(e) { console.warn('Analytics fetch failed:', e); }
-
-  // Direct product count for accuracy
-  try {
-    const prods = await HazeDB.getProducts();
-    if (Array.isArray(prods)) {
-      analytics.totalProducts = prods.length;
-      analytics.totalStock    = prods.reduce((s, p) => s + (parseInt(p.stock) || 0), 0);
-    }
-  } catch(e) {}
-
   const content = document.getElementById('admin-content');
   if (!content) return;
 
+  // Show skeleton immediately
+  content.innerHTML = `
+    <div class="stat-cards">
+      ${['Total Revenue','Total Orders','Products','Delivered'].map(l => `
+        <div class="stat-card">
+          <div class="stat-card-label">${l}</div>
+          <div class="stat-card-value" style="opacity:.3">—</div>
+        </div>`).join('')}
+    </div>
+    <div style="padding:2rem;text-align:center;color:#9d8fc0">Loading data...</div>`;
+
+  // Fetch data
+  let orders = [], products = [];
+  try { orders   = (await HazeDB.getOrders())   || []; } catch(e) { console.warn('Orders fetch failed', e); }
+  try { products = (await HazeDB.getProducts()) || []; } catch(e) { console.warn('Products fetch failed', e); }
+
+  if (!Array.isArray(orders))   orders   = [];
+  if (!Array.isArray(products)) products = [];
+
+  // Calculate analytics
+  const totalRevenue    = orders.reduce((s, o) => s + (o.total || 0), 0);
+  const totalOrders     = orders.length;
+  const pendingOrders   = orders.filter(o => o.status === 'pending').length;
+  const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
+  const totalProducts   = products.length;
+  const totalStock      = products.reduce((s, p) => s + (parseInt(p.stock) || 0), 0);
+
+  // Revenue last 7 days
+  const revenueByDay = [];
+  for (let i = 6; i >= 0; i--) {
+    const d    = new Date(); d.setDate(d.getDate() - i);
+    const day  = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const ds   = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const de   = ds + 86400000;
+    const rev  = orders.filter(o => o.createdAt >= ds && o.createdAt < de).reduce((s, o) => s + (o.total || 0), 0);
+    revenueByDay.push({ day, revenue: rev });
+  }
+
+  // Top products
+  const ps = {};
+  orders.forEach(o => (o.items || []).forEach(item => {
+    if (!ps[item.productId]) ps[item.productId] = { name: item.name || 'Unknown', qty: 0, revenue: 0 };
+    ps[item.productId].qty     += item.qty || 0;
+    ps[item.productId].revenue += (item.price || 0) * (item.qty || 0);
+  }));
+  const topProducts  = Object.values(ps).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+  const recentOrders = [...orders].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 10);
+
+  // Max revenue for chart
+  const maxRev = Math.max(...revenueByDay.map(d => d.revenue), 1);
+
+  // Render full dashboard
   content.innerHTML = `
     <div class="stat-cards">
       <div class="stat-card">
         <div class="stat-card-icon">💰</div>
         <div class="stat-card-label">Total Revenue</div>
-        <div class="stat-card-value">৳ ${(analytics.totalRevenue || 0).toLocaleString()}</div>
+        <div class="stat-card-value">৳ ${totalRevenue.toLocaleString()}</div>
         <div class="stat-card-sub">All time</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-icon">📦</div>
         <div class="stat-card-label">Total Orders</div>
-        <div class="stat-card-value">${analytics.totalOrders || 0}</div>
-        <div class="stat-card-sub">${analytics.pendingOrders || 0} pending</div>
+        <div class="stat-card-value">${totalOrders}</div>
+        <div class="stat-card-sub">${pendingOrders} pending</div>
       </div>
       <div class="stat-card" onclick="navigateTo('products')" style="cursor:pointer">
         <div class="stat-card-icon">👕</div>
         <div class="stat-card-label">Products</div>
-        <div class="stat-card-value">${analytics.totalProducts || 0}</div>
-        <div class="stat-card-sub">${analytics.totalStock || 0} in stock</div>
+        <div class="stat-card-value">${totalProducts}</div>
+        <div class="stat-card-sub">${totalStock} in stock</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-icon">✅</div>
         <div class="stat-card-label">Delivered</div>
-        <div class="stat-card-value">${analytics.deliveredOrders || 0}</div>
+        <div class="stat-card-value">${deliveredOrders}</div>
         <div class="stat-card-sub">orders completed</div>
       </div>
     </div>
@@ -139,16 +175,33 @@ async function renderDashboard() {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
       <div class="panel">
         <div class="panel-header"><div class="panel-title">Revenue — Last 7 Days</div></div>
-        <div class="panel-body"><div class="chart-container" id="revenue-chart"></div></div>
+        <div class="panel-body">
+          <div class="chart-container">
+            ${revenueByDay.map(d => `
+              <div class="chart-bar-wrap">
+                <div class="chart-bar" style="height:${Math.max(4, (d.revenue / maxRev) * 160)}px">
+                  ${d.revenue > 0 ? `<div class="chart-bar-val">৳${d.revenue}</div>` : ''}
+                </div>
+                <div class="chart-label">${d.day}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
       </div>
       <div class="panel">
         <div class="panel-header"><div class="panel-title">Top Products</div></div>
         <div class="panel-body" style="padding:0">
           <table class="admin-table">
             <thead><tr><th>Product</th><th>Qty</th><th>Revenue</th></tr></thead>
-            <tbody id="top-products-body"></tbody>
+            <tbody>
+              ${topProducts.length ? topProducts.map(p => `
+                <tr>
+                  <td class="td-bold">${p.name}</td>
+                  <td>${p.qty}</td>
+                  <td class="td-accent">৳ ${p.revenue.toLocaleString()}</td>
+                </tr>`).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--smoke);padding:1.5rem">No sales yet</td></tr>'}
+            </tbody>
           </table>
-          ${(analytics.topProducts||[]).length===0?'<div style="padding:2rem;text-align:center;color:var(--smoke)">No sales yet</div>':''}
         </div>
       </div>
     </div>
@@ -161,61 +214,24 @@ async function renderDashboard() {
       <div style="overflow-x:auto">
         <table class="admin-table">
           <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
-          <tbody id="recent-orders-body"></tbody>
+          <tbody>
+            ${recentOrders.length ? recentOrders.map(o => `
+              <tr>
+                <td class="td-bold">${o.orderId || '—'}</td>
+                <td>${(o.customer||{}).name||'—'}<br><small style="color:var(--smoke)">${(o.customer||{}).phone||''}</small></td>
+                <td>${(o.items||[]).length}</td>
+                <td class="td-accent">৳ ${(o.total||0).toLocaleString()}</td>
+                <td>${statusBadge(o.status)}</td>
+                <td>${fmtDateShort(o.createdAt)}</td>
+                <td><button class="btn btn-secondary btn-sm" onclick="showOrderDetail('${o.orderId}')">View</button></td>
+              </tr>`).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--smoke);padding:2rem">No orders yet</td></tr>'}
+          </tbody>
         </table>
-        ${(analytics.recentOrders||[]).length===0?'<div style="padding:2rem;text-align:center;color:var(--smoke)">No orders yet — share your store!</div>':''}
       </div>
-    </div>
-  `;
+    </div>`;
 
-  // Chart
-  try {
-    const days  = analytics.revenueByDay || [];
-    const maxRev = Math.max(...days.map(d => d.revenue || 0), 1);
-    const chartEl = document.getElementById('revenue-chart');
-    if (chartEl) {
-      chartEl.innerHTML = days.map(d => `
-        <div class="chart-bar-wrap">
-          <div class="chart-bar" style="height:${Math.max(4, ((d.revenue||0)/maxRev)*160)}px">
-            ${d.revenue > 0 ? `<div class="chart-bar-val">৳${d.revenue}</div>` : ''}
-          </div>
-          <div class="chart-label">${d.day}</div>
-        </div>
-      `).join('');
-    }
-  } catch(e) { console.warn('Chart render error:', e); }
-
-  // Top products
-  try {
-    const tpBody = document.getElementById('top-products-body');
-    if (tpBody && analytics.topProducts) {
-      tpBody.innerHTML = analytics.topProducts.map(p => `
-        <tr>
-          <td class="td-bold">${p.name}</td>
-          <td>${p.qty}</td>
-          <td class="td-accent">৳ ${(p.revenue||0).toLocaleString()}</td>
-        </tr>
-      `).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--smoke)">—</td></tr>';
-    }
-  } catch(e) {}
-
-  // Recent orders
-  try {
-    const roBody = document.getElementById('recent-orders-body');
-    if (roBody && analytics.recentOrders) {
-      roBody.innerHTML = analytics.recentOrders.map(o => `
-        <tr>
-          <td class="td-bold">${o.orderId}</td>
-          <td>${(o.customer||{}).name||'—'}<br><small style="color:var(--smoke)">${(o.customer||{}).phone||''}</small></td>
-          <td>${(o.items||[]).length} item${(o.items||[]).length>1?'s':''}</td>
-          <td class="td-accent">৳ ${(o.total||0).toLocaleString()}</td>
-          <td>${statusBadge(o.status)}</td>
-          <td style="white-space:nowrap">${fmtDateShort(o.createdAt)}</td>
-          <td><button class="btn btn-secondary btn-sm" onclick="showOrderDetail('${o.orderId}')">View</button></td>
-        </tr>
-      `).join('');
-    }
-  } catch(e) {}
+  // Update time
+  updateTime();
 }
 
 /* ══════════════════════════════════════════════════════
