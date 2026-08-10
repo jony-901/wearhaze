@@ -427,29 +427,87 @@ async function uploadProductImage(input) {
   status.style.color = 'var(--accent)';
 
   var formData = new FormData();
-  formData.append('image', file);
-  try {
-    var res = await fetch('api.php?action=upload_image', {method:'POST', body:formData});
-    var data = await res.json();
-    if (data.ok) {
-      document.getElementById('pf-image').value = data.url;
-      preview.src = data.url;
-      if (previewBox) previewBox.style.display = 'block';
-      status.textContent = '✓ Uploaded!';
-      status.style.color = '#4ade80';
-      return;
-    }
-  } catch(e) {}
-  // Base64 fallback
+  // Read as base64 for preview and AI
   var reader = new FileReader();
-  reader.onload = function(ev) {
-    document.getElementById('pf-image').value = ev.target.result;
-    preview.src = ev.target.result;
+  reader.onload = async function(ev) {
+    var b64 = ev.target.result;
+    
+    // Attempt upload to server for actual image storage
+    var formData = new FormData();
+    formData.append('image', file);
+    try {
+      var res = await fetch('api.php?action=upload_image', {method:'POST', body:formData});
+      var data = await res.json();
+      if (data.ok) {
+        document.getElementById('pf-image').value = data.url;
+        preview.src = data.url;
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch(e) {
+      document.getElementById('pf-image').value = b64;
+      preview.src = b64;
+    }
+    
     if (previewBox) previewBox.style.display = 'block';
     status.textContent = '✓ Photo loaded!';
     status.style.color = '#4ade80';
+
+    // Trigger AI suggestion
+    generateAIProductDetails(b64);
   };
   reader.readAsDataURL(file);
+}
+
+async function generateAIProductDetails(base64Image) {
+  var s = await HazeDB.getSettings();
+  if (!s || !s.geminiKey) return; // No key, do nothing
+
+  // Ensure name/desc are empty before auto-filling
+  var nameEl = document.getElementById('pf-name');
+  var descEl = document.getElementById('pf-desc');
+  if (nameEl.value.trim() !== '') return; // Don't overwrite if user already typed something
+
+  var status = document.getElementById('img-upload-status');
+  status.innerHTML = '✨ AI is thinking... <span style="font-size:0.7rem;color:var(--ash)">(Suggesting name & description)</span>';
+  status.style.color = '#a855f7'; // purple
+
+  try {
+    var b64Data = base64Image.split(',')[1];
+    var mime = base64Image.split(',')[0].split(':')[1].split(';')[0];
+    
+    var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + s.geminiKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: "Act as a modern streetwear clothing brand copywriter. Analyze this clothing item. Give me a JSON object with 'name' (a short, catchy product name) and 'description' (a brief 1-2 sentence description highlighting the style and vibe). No markdown, just raw JSON." },
+            { inline_data: { mime_type: mime, data: b64Data } }
+          ]
+        }]
+      })
+    });
+    
+    var data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    
+    var text = data.candidates[0].content.parts[0].text;
+    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    var result = JSON.parse(text);
+    
+    if (result.name) nameEl.value = result.name;
+    if (result.description) descEl.value = result.description;
+    
+    status.innerHTML = '✨ AI Auto-Filled!';
+    status.style.color = '#4ade80';
+    toast('✓ AI suggestion applied!');
+    
+  } catch(e) {
+    console.error('AI Error:', e);
+    status.textContent = '✓ Photo loaded! (AI suggestion failed)';
+    status.style.color = '#4ade80';
+  }
 }
 
 async function saveProduct(productId) {
@@ -539,6 +597,14 @@ async function renderSettings() {
   h += '<button class="btn btn-primary" style="width:100%" onclick="saveAboutImageSettings()">💾 Save About Image</button>';
   h += '</div></div></div>';
 
+  // AI Settings
+  h += '<div class="panel" style="border:1px solid rgba(74,222,128,.3)"><div class="panel-header" style="background:rgba(74,222,128,.1)"><div class="panel-title">🤖 AI Auto-Suggest (Gemini API)</div></div><div class="panel-body">';
+  h += '<p style="font-size:.8rem;color:var(--ash);margin-bottom:1rem">প্রোডাক্ট ছবি আপলোড করলে AI নিজে থেকে নাম ও ডেসক্রিপশন সাজেস্ট করবে। এর জন্য একটি ফ্রি Gemini API Key প্রয়োজন।</p>';
+  h += '<div class="admin-form"><div class="form-field"><label>Gemini API Key</label><input type="password" id="s-gemini-key" value="' + (s.geminiKey||'') + '" placeholder="AIzaSy..."></div>';
+  h += '<button class="btn btn-primary" style="width:100%" onclick="saveAISettings()">💾 Save API Key</button>';
+  h += '<div style="margin-top:1rem;font-size:.75rem;color:var(--smoke)">API Key নেই? <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent);text-decoration:none">এখান থেকে ফ্রি তৈরি করুন</a>।</div>';
+  h += '</div></div></div>';
+
   h += '</div>';
   c.innerHTML = h;
 }
@@ -618,6 +684,14 @@ async function saveAboutImageSettings() {
   try {
     await HazeDB.updateSettings({aboutImage: url});
     toast('✓ About image saved!');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function saveAISettings() {
+  var key = document.getElementById('s-gemini-key').value.trim();
+  try {
+    await HazeDB.updateSettings({geminiKey: key});
+    toast('✓ Gemini API Key saved!');
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
