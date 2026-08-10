@@ -1,0 +1,14 @@
+RewriteEngine On
+
+# Redirect /index.html to /
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.html\ HTTP/ 
+RewriteRule ^index\.html$ https://%{HTTP_HOST}/ [R=301,L]
+
+# Redirect other .html files to remove the extension
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /+(.*)\.html\ HTTP/
+RewriteRule ^(.*)\.html$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+# Serve .html files without the extension in the URL
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.html -f
+RewriteRule ^(.*)$ $1.html [L]
