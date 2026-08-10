@@ -297,6 +297,11 @@ async function showOrderDetail(orderId) {
 ══════════════════════════════════════════════════ */
 async function renderProducts() {
   var products = (await HazeDB.getProducts()) || [];
+  // Auto-seed: if DB is empty, insert the hardcoded shop products
+  if (products.length === 0 && typeof HazeDB.seedProducts === 'function') {
+    await HazeDB.seedProducts();
+    products = (await HazeDB.getProducts()) || [];
+  }
   var c = document.getElementById('admin-content');
   var h = '<div class="panel"><div class="panel-header"><div class="panel-title">Products (' + products.length + ')</div><button class="btn btn-primary" onclick="showProductModal()">+ Add Product</button></div>';
   h += '<div style="overflow-x:auto"><table class="admin-table"><thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Price (৳)</th><th>Stock</th><th>Tag</th><th>Featured</th><th>Actions</th></tr></thead><tbody>';

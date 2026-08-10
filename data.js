@@ -314,11 +314,24 @@ const HazeDB = (() => {
     return await apiCall('validate_coupon', { code, total });
   }
 
-  // ── INIT ─────────────────────────────────────────────
-  function init() {
-    // API backend doesn't need client-side init loading like localStorage did,
-    // but this func is kept for compatibility if needed.
+  // ── SEED PRODUCTS (insert hardcoded shop products into DB) ──
+  async function seedProducts() {
+    var existing = await getProducts();
+    if (existing && existing.length > 0) return; // already have products
+    var seeds = [
+      {id:'haze-tee-001',name:'Oversized Tee',description:'100% Cotton · Dropped Shoulder',price:850,originalPrice:0,image:'images/product-tee.png',category:'tops',tag:'New',sizes:['S','M','L','XL','XXL'],stock:50,featured:true,createdAt:Date.now()},
+      {id:'haze-hoodie-001',name:'Hoodie',description:'Heavy Fleece · Kangaroo Pocket',price:1800,originalPrice:0,image:'images/product-hoodie.png',category:'tops',tag:'Popular',sizes:['S','M','L','XL'],stock:50,featured:true,createdAt:Date.now()},
+      {id:'haze-cargo-001',name:'Cargo Pants',description:'Wide Leg · 6 Pockets',price:2200,originalPrice:0,image:'images/product-cargo.png',category:'bottoms',tag:'Limited',sizes:['S','M','L','XL'],stock:30,featured:true,createdAt:Date.now()},
+      {id:'haze-cap-001',name:'5-Panel Cap',description:'Embroidered Logo',price:650,originalPrice:0,image:'images/product-cap.png',category:'accessories',tag:'',sizes:['One Size'],stock:100,featured:false,createdAt:Date.now()},
+      {id:'haze-tote-001',name:'Tote Bag',description:'Canvas · Screen Printed',price:400,originalPrice:0,image:'images/product-tote.png',category:'accessories',tag:'',sizes:['One Size'],stock:100,featured:false,createdAt:Date.now()}
+    ];
+    for (var i = 0; i < seeds.length; i++) {
+      await addProduct(seeds[i]);
+    }
   }
+
+  // ── INIT ─────────────────────────────────────────────
+  function init() {}
 
   // ── PUBLIC API ───────────────────────────────────────
   return {
@@ -329,8 +342,9 @@ const HazeDB = (() => {
     registerUser, loginUser, getCurrentUser, isUserLoggedIn, isCurrentUserAdmin, logoutUser, getUserProfile,
     getSettings, updateSettings, getAnalytics,
     getCoupons, createCoupon, toggleCoupon, deleteCoupon, validateCoupon,
-    init, ADMIN_EMAIL
+    seedProducts, init, ADMIN_EMAIL
   };
 
 })();
+
 
