@@ -429,47 +429,39 @@ async function uploadProductImage(input) {
   var formData = new FormData();
   // Read as base64 for preview and AI
   var reader = new FileReader();
-  reader.onload = async function(ev) {
-    var b64 = ev.target.result;
-    
-    try {
-      var s = await HazeDB.getSettings();
-      if (s && s.imgbbKey) {
-        // Upload to ImgBB
-        var imgFormData = new FormData();
-        imgFormData.append('image', b64.split(',')[1]);
-        var res = await fetch('https://api.imgbb.com/1/upload?key=' + s.imgbbKey, { method: 'POST', body: imgFormData });
-        var data = await res.json();
-        if (data.success) {
-          document.getElementById('pf-image').value = data.data.url;
-          preview.src = data.data.url;
-        } else {
-          throw new Error('ImgBB upload failed');
-        }
+  reader.onload = function(ev) {
+    var img = new Image();
+    img.onload = async function() {
+      // Resize image to max 800px width/height for database storage
+      var canvas = document.createElement('canvas');
+      var max = 800;
+      var width = img.width;
+      var height = img.height;
+      
+      if (width > height) {
+        if (width > max) { height *= max / width; width = max; }
       } else {
-        // Upload to local server (api.php)
-        var formData = new FormData();
-        formData.append('image', file);
-        var res = await fetch('api.php?action=upload_image', {method:'POST', body:formData});
-        var data = await res.json();
-        if (data.ok) {
-          document.getElementById('pf-image').value = data.url;
-          preview.src = data.url;
-        } else {
-          throw new Error('Local upload failed');
-        }
+        if (height > max) { width *= max / height; height = max; }
       }
-    } catch(e) {
+      
+      canvas.width = width;
+      canvas.height = height;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Compress to JPEG Base64
+      var b64 = canvas.toDataURL('image/jpeg', 0.85);
+      
       document.getElementById('pf-image').value = b64;
       preview.src = b64;
-    }
-    
-    if (previewBox) previewBox.style.display = 'block';
-    status.textContent = '✓ Photo loaded!';
-    status.style.color = '#4ade80';
+      if (previewBox) previewBox.style.display = 'block';
+      status.textContent = '✓ Photo processed and ready for Database!';
+      status.style.color = '#4ade80';
 
-    // Trigger AI suggestion
-    generateAIProductDetails(b64);
+      // Trigger AI suggestion (runs in background)
+      generateAIProductDetails(b64);
+    };
+    img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
 }
