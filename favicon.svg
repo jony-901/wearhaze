@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512">
+  <rect width="100" height="100" fill="#FFB800"/>
+  <!-- Hanger hook -->
+  <path d="M50 10 Q50 4 57 4 Q64 4 64 10 Q64 17 50 21" fill="none" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Hanger neck down to body -->
+  <line x1="50" y1="21" x2="50" y2="30" stroke="#111111" stroke-width="4" stroke-linecap="round"/>
+  <!-- Hanger arc body -->
+  <path d="M8 75 Q50 28 92 75" fill="none" stroke="#111111" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Hanger bottom bar -->
+  <path d="M8 75 L8 82 L92 82 L92 75" fill="none" stroke="#111111" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Text WEAR HAZE in two lines -->
+  <text x="50" y="60" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="15" fill="#111111" text-anchor="middle" letter-spacing="1">WEAR</text>
+  <text x="50" y="79" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="15" fill="#111111" text-anchor="middle" letter-spacing="1">HAZE</text>
+</svg>
