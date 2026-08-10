@@ -601,157 +601,53 @@ ul { list-style: none; }
   position: relative; z-index: 2;
 }
 .lookbook-header {
-  text-align: center; margin-bottom: 2.5rem;
+  text-align: center; margin-bottom: 4rem;
 }
-.lookbook-subtitle {
-  color: var(--ash);
-  font-size: 0.85rem;
-  margin-top: 0.5rem;
-  letter-spacing: 0.03em;
-}
-
-/* ── TABS ── */
-.lookbook-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-bottom: 3rem;
-}
-.lookbook-tab {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem 1.5rem;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 100px;
-  color: var(--ash);
-  font-family: var(--font-label);
-  font-size: 0.7rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-.lookbook-tab .tab-icon {
-  font-size: 1rem;
-  line-height: 1;
-}
-.lookbook-tab:hover {
-  border-color: rgba(139,92,246,0.5);
-  color: var(--white);
-  background: rgba(139,92,246,0.1);
-}
-.lookbook-tab.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--white);
-  box-shadow: 0 0 20px rgba(139,92,246,0.4);
-}
-
-/* ── GRID ── */
 .lookbook-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  min-height: 300px;
-  transition: opacity 0.3s ease;
-}
-.lookbook-grid.filtering {
-  opacity: 0.3;
-  pointer-events: none;
-}
-.lookbook-loading {
-  grid-column: 1/-1;
-  text-align: center;
-  color: var(--ash);
-  font-family: var(--font-label);
-  font-size: 0.75rem;
-  letter-spacing: 0.2em;
-  padding: 4rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
 }
 .lookbook-item {
   position: relative; overflow: hidden;
-  aspect-ratio: 3/4;
+  aspect-ratio: 2/3;
   cursor: pointer;
   border-radius: 4px;
 }
 .lookbook-item img {
   width: 100%; height: 100%; object-fit: cover;
   transition: transform 0.6s var(--transition), filter 0.4s ease;
-  filter: brightness(0.7) saturate(0.9);
+  filter: brightness(0.65) saturate(0.9);
 }
 .lookbook-item:hover img {
-  transform: scale(1.06);
-  filter: brightness(0.9) saturate(1.1);
+  transform: scale(1.07);
+  filter: brightness(0.85) saturate(1.1);
 }
 .lookbook-item::after {
   content: ''; position: absolute; inset: 0;
-  background: linear-gradient(180deg, transparent 50%, rgba(13,11,18,0.85) 100%);
+  background: linear-gradient(180deg, transparent 45%, rgba(13,11,18,0.9) 100%);
 }
 .lookbook-item .lookbook-label {
-  position: absolute; bottom: 1.2rem; left: 1.2rem;
+  position: absolute; bottom: 1.1rem; left: 1.1rem;
   z-index: 1;
   font-family: var(--font-label);
-  font-size: 0.6rem; letter-spacing: 0.2em;
+  font-size: 0.65rem; letter-spacing: 0.2em;
   text-transform: uppercase; color: var(--white);
-  opacity: 0.8;
+  font-weight: 600;
 }
-.lookbook-item .lookbook-price {
-  position: absolute; bottom: 1.2rem; right: 1.2rem;
+.lookbook-item .lookbook-arrow {
+  position: absolute; bottom: 1.1rem; right: 1.1rem;
   z-index: 1;
   font-family: var(--font-label);
-  font-size: 0.7rem; letter-spacing: 0.05em;
-  color: var(--accent);
-  font-weight: 700;
+  font-size: 0.6rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--accent);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
-.lookbook-item .lookbook-tag {
-  position: absolute; top: 1rem; left: 1rem;
-  z-index: 1;
-  background: var(--accent);
-  color: #fff;
-  font-family: var(--font-label);
-  font-size: 0.55rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  padding: 0.25rem 0.6rem;
-  border-radius: 3px;
-}
-.lookbook-no-products {
-  grid-column: 1/-1;
-  text-align: center;
-  color: var(--ash);
-  font-family: var(--font-label);
-  font-size: 0.75rem;
-  letter-spacing: 0.2em;
-  padding: 4rem;
-}
-
-/* ── CTA ── */
-.lookbook-cta {
-  text-align: center;
-  margin-top: 3rem;
-}
-.btn-outline {
-  display: inline-block;
-  padding: 0.8rem 2.5rem;
-  border: 1px solid rgba(139,92,246,0.5);
-  color: var(--white);
-  font-family: var(--font-label);
-  font-size: 0.75rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  text-decoration: none;
-  border-radius: 100px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  background: transparent;
-}
-.btn-outline:hover {
-  background: var(--accent);
-  border-color: var(--accent);
-  box-shadow: 0 0 20px rgba(139,92,246,0.4);
+.lookbook-item:hover .lookbook-arrow {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 /* ── BRAND QUOTE ────────────────────────────────────── */
@@ -1090,8 +986,6 @@ ul { list-style: none; }
   .products-grid { grid-template-columns: repeat(2, 1fr); }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .lookbook-grid { grid-template-columns: repeat(2, 1fr); }
-  .lookbook-tabs { gap: 0.5rem; }
-  .lookbook-tab { padding: 0.55rem 1rem; font-size: 0.65rem; }
   .footer-grid { grid-template-columns: 1fr; }
   .newsletter-form { flex-direction: column; }
   .newsletter-form button { width: 100%; }
