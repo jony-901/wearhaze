@@ -432,17 +432,32 @@ async function uploadProductImage(input) {
   reader.onload = async function(ev) {
     var b64 = ev.target.result;
     
-    // Attempt upload to server for actual image storage
-    var formData = new FormData();
-    formData.append('image', file);
     try {
-      var res = await fetch('api.php?action=upload_image', {method:'POST', body:formData});
-      var data = await res.json();
-      if (data.ok) {
-        document.getElementById('pf-image').value = data.url;
-        preview.src = data.url;
+      var s = await HazeDB.getSettings();
+      if (s && s.imgbbKey) {
+        // Upload to ImgBB
+        var imgFormData = new FormData();
+        imgFormData.append('image', b64.split(',')[1]);
+        var res = await fetch('https://api.imgbb.com/1/upload?key=' + s.imgbbKey, { method: 'POST', body: imgFormData });
+        var data = await res.json();
+        if (data.success) {
+          document.getElementById('pf-image').value = data.data.url;
+          preview.src = data.data.url;
+        } else {
+          throw new Error('ImgBB upload failed');
+        }
       } else {
-        throw new Error('Upload failed');
+        // Upload to local server (api.php)
+        var formData = new FormData();
+        formData.append('image', file);
+        var res = await fetch('api.php?action=upload_image', {method:'POST', body:formData});
+        var data = await res.json();
+        if (data.ok) {
+          document.getElementById('pf-image').value = data.url;
+          preview.src = data.url;
+        } else {
+          throw new Error('Local upload failed');
+        }
       }
     } catch(e) {
       document.getElementById('pf-image').value = b64;
@@ -615,6 +630,14 @@ async function renderSettings() {
   h += '<div style="margin-top:1rem;font-size:.75rem;color:var(--smoke)">API Key নেই? <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent);text-decoration:none">এখান থেকে ফ্রি তৈরি করুন</a>।</div>';
   h += '</div></div></div>';
 
+  // ImgBB Settings
+  h += '<div class="panel" style="border:1px solid rgba(59,130,246,.3)"><div class="panel-header" style="background:rgba(59,130,246,.1)"><div class="panel-title">☁️ Image Hosting (ImgBB API)</div></div><div class="panel-body">';
+  h += '<p style="font-size:.8rem;color:var(--ash);margin-bottom:1rem">Hostinger আপডেট করার সময় অনেকসময় লোকাল ছবি ডিলিট হয়ে যায়। ImgBB ব্যবহার করলে ছবি চিরকাল সেভ থাকবে।</p>';
+  h += '<div class="admin-form"><div class="form-field"><label>ImgBB API Key</label><input type="password" id="s-imgbb-key" value="' + (s.imgbbKey||'') + '" placeholder="e.g. 9b7a..."></div>';
+  h += '<button class="btn btn-primary" style="width:100%" onclick="saveImgBBSettings()">💾 Save ImgBB Key</button>';
+  h += '<div style="margin-top:1rem;font-size:.75rem;color:var(--smoke)">API Key নেই? <a href="https://api.imgbb.com/" target="_blank" style="color:var(--accent);text-decoration:none">এখান থেকে ফ্রি তৈরি করুন</a>।</div>';
+  h += '</div></div></div>';
+
   h += '</div>';
   c.innerHTML = h;
 }
@@ -702,6 +725,14 @@ async function saveAISettings() {
   try {
     await HazeDB.updateSettings({geminiKey: key});
     toast('✓ Gemini API Key saved!');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function saveImgBBSettings() {
+  var key = document.getElementById('s-imgbb-key').value.trim();
+  try {
+    await HazeDB.updateSettings({imgbbKey: key});
+    toast('✓ ImgBB API Key saved!');
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
