@@ -57,6 +57,28 @@ $isAdmin = isAdmin();
     </form>
   </div>
 </div>
+
+<!-- Edit Partner Modal (Admin only) -->
+<div class="modal hidden" id="editPartnerModal">
+  <div class="modal-overlay" onclick="closeModal('editPartnerModal')"></div>
+  <div class="modal-box">
+    <div class="modal-hd"><h3><i class="fas fa-user-edit"></i> পার্টনার এডিট করুন</h3><button onclick="closeModal('editPartnerModal')"><i class="fas fa-times"></i></button></div>
+    <form id="editPartnerForm" onsubmit="submitEditPartner(event)">
+      <input type="hidden" name="id" id="editPartnerId">
+      <div class="form-row">
+        <div class="form-group"><label>নাম *</label><input type="text" name="name" id="editPartnerName" required placeholder="পূর্ণ নাম"></div>
+        <div class="form-group"><label>ইমেইল *</label><input type="email" name="email" id="editPartnerEmail" required placeholder="email@example.com"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>ফোন</label><input type="tel" name="phone" id="editPartnerPhone" placeholder="01XXXXXXXXX"></div>
+        <div class="form-group"><label>ভূমিকা</label><select name="role" id="editPartnerRole"><option value="partner">পার্টনার</option><option value="admin">অ্যাডমিন</option></select></div>
+      </div>
+      <div class="form-group"><label>নতুন পাসওয়ার্ড</label><input type="password" name="password" minlength="6" placeholder="পরিবর্তন না করতে চাইলে ফাঁকা রাখুন"></div>
+      <div id="editPartnerErr" class="form-error hidden"></div>
+      <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:13px">সেভ করুন</button>
+    </form>
+  </div>
+</div>
 <?php endif; ?>
 
 <!-- Add Investment Modal -->
@@ -99,6 +121,11 @@ async function loadShareholders() {
 
   grid.innerHTML = sh.map(s => {
     const init = s.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+    // Escape quotes for JS string
+    const escapedName = s.name.replace(/'/g, "\\'");
+    const escapedEmail = s.email.replace(/'/g, "\\'");
+    const escapedPhone = (s.phone || '').replace(/'/g, "\\'");
+    
     return `<div class="sh-card ${s.is_active==0?'inactive':''}">
       <div class="sh-avatar">${init}</div>
       <div class="sh-name">${s.name} <span class="badge ${s.role==='admin'?'b-gold':'b-blue'}">${s.role==='admin'?'অ্যাডমিন':'পার্টনার'}</span></div>
@@ -109,7 +136,8 @@ async function loadShareholders() {
         <div class="sh-stat"><span class="sh-sl">শেয়ার</span><span class="sh-sv">${s.share_pct}%</span></div>
       </div>
       <div class="sh-actions">
-        <button class="btn-success" onclick="openInvModal(${s.id},'${s.name.replace(/'/g,'')}')"><i class="fas fa-plus"></i> বিনিয়োগ</button>
+        <button class="btn-success" onclick="openInvModal(${s.id},'${escapedName}')"><i class="fas fa-plus"></i> বিনিয়োগ</button>
+        ${IS_ADMIN ? `<button class="btn-primary" onclick="openEditPartnerModal(${s.id},'${escapedName}','${escapedEmail}','${escapedPhone}','${s.role}')"><i class="fas fa-edit"></i> এডিট</button>` : ''}
         ${IS_ADMIN ? `<button class="btn-danger" onclick="togglePartner(${s.id},${s.is_active})">${s.is_active==1?'<i class="fas fa-ban"></i> নিষ্ক্রিয়':'<i class="fas fa-check"></i> সক্রিয়'}</button>` : ''}
       </div>
       ${s.is_active==0?'<span class="badge b-red" style="margin-top:8px">নিষ্ক্রিয়</span>':''}
@@ -124,6 +152,16 @@ function openInvModal(id, name) {
   openModal('addInvModal');
 }
 
+function openEditPartnerModal(id, name, email, phone, role) {
+  document.getElementById('editPartnerId').value = id;
+  document.getElementById('editPartnerName').value = name;
+  document.getElementById('editPartnerEmail').value = email;
+  document.getElementById('editPartnerPhone').value = phone;
+  document.getElementById('editPartnerRole').value = role;
+  document.querySelector('#editPartnerForm [name="password"]').value = '';
+  openModal('editPartnerModal');
+}
+
 async function submitPartner(e) {
   e.preventDefault();
   const err = document.getElementById('partnerErr');
@@ -131,6 +169,16 @@ async function submitPartner(e) {
   const data = Object.fromEntries(new FormData(e.target));
   const res = await api('add_shareholder','POST',data);
   if(res&&res.success) { showToast(res.message); closeModal('addPartnerModal'); e.target.reset(); loadShareholders(); }
+  else { err.textContent=res?.error||'সমস্যা হয়েছে।'; err.classList.remove('hidden'); }
+}
+
+async function submitEditPartner(e) {
+  e.preventDefault();
+  const err = document.getElementById('editPartnerErr');
+  err.classList.add('hidden');
+  const data = Object.fromEntries(new FormData(e.target));
+  const res = await api('edit_shareholder','POST',data);
+  if(res&&res.success) { showToast(res.message); closeModal('editPartnerModal'); loadShareholders(); }
   else { err.textContent=res?.error||'সমস্যা হয়েছে।'; err.classList.remove('hidden'); }
 }
 

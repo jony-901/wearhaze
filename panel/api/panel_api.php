@@ -86,6 +86,34 @@ switch ($action) {
             jsonResponse(['error'=>'সমস্যা হয়েছে।'], 500);
         }
 
+    case 'edit_shareholder':
+        requireAdmin();
+        $data = json_decode(file_get_contents('php://input'), true);
+        $id = (int)($data['id'] ?? 0);
+        $name = trim($data['name'] ?? '');
+        $email = strtolower(trim($data['email'] ?? ''));
+        $phone = trim($data['phone'] ?? '');
+        $role = $data['role'] ?? 'partner';
+        $pass = $data['password'] ?? '';
+        
+        if (!$id || !$name || !$email) jsonResponse(['error'=>'নাম ও ইমেইল আবশ্যক।'], 400);
+        
+        try {
+            if ($pass) {
+                $hashed = password_hash($pass, PASSWORD_BCRYPT);
+                $stmt = $db->prepare("UPDATE panel_users SET name=?, email=?, phone=?, role=?, password=? WHERE id=?");
+                $stmt->execute([$name, $email, $phone, $role, $hashed, $id]);
+            } else {
+                $stmt = $db->prepare("UPDATE panel_users SET name=?, email=?, phone=?, role=? WHERE id=?");
+                $stmt->execute([$name, $email, $phone, $role, $id]);
+            }
+            logActivity('পার্টনার তথ্য পরিবর্তন', "ID: $id, Name: $name");
+            jsonResponse(['success'=>true,'message'=>'পার্টনারের তথ্য আপডেট হয়েছে।']);
+        } catch (PDOException $e) {
+            if ($e->getCode() === '23000') jsonResponse(['error'=>'এই ইমেইল ইতিমধ্যে অন্য কারও অ্যাকাউন্টে আছে।'], 400);
+            jsonResponse(['error'=>'সমস্যা হয়েছে।'], 500);
+        }
+
     case 'toggle_partner':
         requireAdmin();
         $data = json_decode(file_get_contents('php://input'), true);
