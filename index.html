@@ -615,7 +615,12 @@
                   <p class="product-desc">${p.description || ''}</p>
                   <div class="product-price">৳ ${p.price.toLocaleString()} ${origPriceHtml}</div>
                   <div class="size-selector" data-product="${p.id}">
-                    ${sizes.map((s, i) => `<span class="size-btn ${i === 0 ? 'selected' : ''}" data-size="${s}" onclick="selectSizeBtn(this)">${s}</span>`).join('')}
+                    ${sizes.map((s, i) => {
+                      let szStock = p.sizeStock && p.sizeStock[s] !== undefined ? p.sizeStock[s] : 1;
+                      let noStock = szStock <= 0;
+                      let extraStyle = noStock ? 'opacity:0.4;text-decoration:line-through;pointer-events:none' : '';
+                      return `<span class="size-btn ${i === 0 && !noStock ? 'selected' : ''}" data-size="${s}" onclick="selectSizeBtn(this)" style="${extraStyle}">${s}</span>`;
+                    }).join('')}
                   </div>
                 </div>
                 <button class="product-btn" onclick="addToCartFromCard('${p.id}',this)" ${isOutOfStock ? 'disabled style="opacity:.45;cursor:not-allowed;background:#555"' : ''}>${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</button>

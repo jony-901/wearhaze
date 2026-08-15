@@ -454,14 +454,17 @@ async function showProductModal(productId) {
   h += '<div class="admin-form-row"><div class="form-field"><label>Selling Price (৳) *</label><input type="number" id="pf-price" value="' + (p.price||'') + '" placeholder="850"></div>';
   h += '<div class="form-field"><label>Original Price (৳) — ছাড় দেখাতে</label><input type="number" id="pf-original-price" value="' + (p.originalPrice||'') + '" placeholder="e.g. 1200"></div></div>';
 
-  // Row 3: Stock + Tag
-  h += '<div class="admin-form-row"><div class="form-field"><label>Stock Quantity</label><input type="number" id="pf-stock" value="' + (p.stock||'') + '" placeholder="50"></div>';
+  // Row 3: Sizes + Tag
+  h += '<div class="admin-form-row"><div class="form-field"><label>Available Sizes (comma separated)</label><input type="text" id="pf-sizes" value="' + sizesStr + '" placeholder="S,M,L,XL"></div>';
   h += '<div class="form-field"><label>Tag / Badge</label><select id="pf-tag">';
   h += '<option value=""' + (!p.tag?' selected':'') + '>None</option>';
   ['New','Popular','Limited','Sale'].forEach(function(t){
     h += '<option value="' + t + '"' + (p.tag===t?' selected':'') + '>' + t + '</option>';
   });
   h += '</select></div></div>';
+
+  // Row 4: Size-Specific Stock
+  h += '<div class="form-field form-field-full"><label>Stock per Size</label><div id="pf-size-stock-container" style="display:flex;gap:.5rem;flex-wrap:wrap;background:rgba(0,0,0,.1);padding:.5rem;border-radius:4px"></div></div>';
 
   // Photo upload
   h += '<div class="form-field form-field-full" style="background:rgba(139,92,246,.05);padding:1rem;border:1px solid rgba(139,92,246,.2);border-radius:6px">';
@@ -474,9 +477,6 @@ async function showProductModal(productId) {
   h += '<div style="margin-top:1rem;font-size:.75rem;color:var(--smoke)">অথবা ছবির Link paste করুন:</div>';
   h += '<input type="text" id="pf-image" value="' + (p.image||'') + '" placeholder="https://..." style="margin-top:.3rem">';
   h += '</div>';
-
-  // Sizes
-  h += '<div class="form-field form-field-full"><label>Available Sizes (comma separated)</label><input type="text" id="pf-sizes" value="' + sizesStr + '" placeholder="S,M,L,XL"></div>';
 
   // Featured
   h += '<div class="form-field form-field-full"><label style="display:flex;align-items:center;gap:.5rem;cursor:pointer"><input type="checkbox" id="pf-featured"' + (p.featured?' checked':'') + ' style="width:16px;height:16px;accent-color:var(--accent)"> Show as Featured on Homepage</label></div>';
@@ -497,6 +497,31 @@ async function showProductModal(productId) {
     if (e.target.value) { prev.src = e.target.value; box.style.display = 'block'; }
     else { box.style.display = 'none'; }
   });
+
+  // Size stock dynamic rendering
+  var currentSizeStock = p.sizeStock || {};
+  function renderSizeStock() {
+    var sStr = document.getElementById('pf-sizes').value;
+    var sizes = sStr.split(',').map(function(s){return s.trim()}).filter(Boolean);
+    var cont = document.getElementById('pf-size-stock-container');
+    if (sizes.length === 0) {
+      cont.innerHTML = '<span style="font-size:.75rem;color:var(--smoke)">Please enter sizes above first.</span>';
+      return;
+    }
+    var html = '';
+    sizes.forEach(function(sz) {
+      var val = currentSizeStock[sz] !== undefined ? currentSizeStock[sz] : 10; // default 10
+      html += '<div style="display:flex;flex-direction:column;gap:.2rem;width:60px"><label style="font-size:.7rem;text-align:center">' + sz + '</label><input type="number" class="sz-stock-input" data-size="' + sz + '" value="' + val + '" style="text-align:center;padding:.4rem"></div>';
+    });
+    cont.innerHTML = html;
+  }
+  document.getElementById('pf-sizes').addEventListener('input', function() {
+    // Preserve currently typed values before re-rendering
+    var inputs = document.querySelectorAll('.sz-stock-input');
+    inputs.forEach(function(inp) { currentSizeStock[inp.dataset.size] = parseInt(inp.value) || 0; });
+    renderSizeStock();
+  });
+  renderSizeStock();
 
   overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.remove(); });
 }
@@ -628,6 +653,19 @@ async function saveProduct(productId) {
   var catCustom = catCustomEl ? catCustomEl.value.trim() : '';
   var finalCat = (catSel === 'custom' && catCustom) ? catCustom.toLowerCase() : catSel;
 
+  var sizesArr = document.getElementById('pf-sizes').value.split(',').map(function(s){return s.trim();}).filter(Boolean);
+  
+  var sizeStockObj = {};
+  var totStock = 0;
+  var szInputs = document.querySelectorAll('.sz-stock-input');
+  if (szInputs.length > 0) {
+    szInputs.forEach(function(inp) {
+      var sVal = parseInt(inp.value) || 0;
+      sizeStockObj[inp.dataset.size] = sVal;
+      totStock += sVal;
+    });
+  }
+
   var data = {
     name: name,
     description: document.getElementById('pf-desc').value.trim(),
@@ -637,8 +675,9 @@ async function saveProduct(productId) {
     image: document.getElementById('pf-image').value.trim(),
     category: finalCat,
     tag: document.getElementById('pf-tag').value,
-    sizes: document.getElementById('pf-sizes').value.split(',').map(function(s){return s.trim();}).filter(Boolean),
-    stock: parseInt(document.getElementById('pf-stock').value) || 0,
+    sizes: sizesArr,
+    sizeStock: sizeStockObj,
+    stock: totStock,
     featured: document.getElementById('pf-featured').checked
   };
 

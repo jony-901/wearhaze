@@ -149,8 +149,9 @@
       opacity: 0.3;
       cursor: not-allowed;
       text-decoration: line-through;
+      pointer-events: none;
+      background: rgba(0,0,0,0.05);
     }
-
     /* Add to Cart */
     .detail-cart-row {
       display: flex;
@@ -398,15 +399,20 @@
             <!-- SIZE SELECTOR -->
             <div class="size-label">Select Size</div>
             <div class="size-grid" id="detail-size-grid">
-              ${sizes.map(s => `
-                <div class="size-option" data-size="${s}" onclick="selectSize('${s}', this)">
+              ${sizes.map(s => {
+                let szStock = product.sizeStock && product.sizeStock[s] !== undefined ? product.sizeStock[s] : 1;
+                let noStock = szStock <= 0;
+                let extraClass = noStock ? ' out-of-stock' : '';
+                return `
+                <div class="size-option${extraClass}" data-size="${s}" onclick="${noStock ? '' : `selectSize('${s}', this, ${szStock})`}">
                   ${s}
                 </div>
-              `).join('')}
+                `;
+              }).join('')}
             </div>
 
             <!-- STOCK -->
-            <div class="stock-info">
+            <div class="stock-info" id="detail-stock-info">
               <span class="${stockColor}">${stockText}</span>
             </div>
 
@@ -438,10 +444,18 @@
       `;
     }
 
-    function selectSize(size, el) {
+    function selectSize(size, el, stockCount) {
+      if(el.classList.contains('out-of-stock')) return;
       document.querySelectorAll('.size-option').forEach(b => b.classList.remove('selected'));
       el.classList.add('selected');
       selectedSize = size;
+      
+      const stockInfo = document.getElementById('detail-stock-info');
+      if (stockInfo && stockCount !== undefined) {
+         let color = stockCount === 0 ? 'out' : stockCount < 10 ? 'low-stock' : 'in-stock';
+         let text = stockCount === 0 ? 'Out of Stock' : stockCount < 10 ? `Only ${stockCount} left!` : `${stockCount} in stock`;
+         stockInfo.innerHTML = `<span class="${color}">${text}</span>`;
+      }
     }
 
     function changeQty(delta) {
