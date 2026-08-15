@@ -592,11 +592,19 @@
                  <span style="background:#ef4444;color:#fff;font-size:0.65em;padding:0.15rem 0.4rem;border-radius:3px;margin-left:0.4rem;font-weight:700;vertical-align:middle">SALE</span>`
               : '';
             const tagText = p.tag || (hasDiscount ? 'Sale' : '');
+            const isOutOfStock = (p.stock !== undefined && p.stock !== null && p.stock <= 0);
+            const isLowStock   = (!isOutOfStock && p.stock !== undefined && p.stock < 10);
+            const stockBadge   = isOutOfStock
+              ? `<span style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(239,68,68,.9);color:#fff;font-size:.65rem;font-weight:700;padding:.2rem .6rem;border-radius:3px;letter-spacing:.05em;white-space:nowrap">OUT OF STOCK</span>`
+              : isLowStock
+              ? `<span style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(251,191,36,.9);color:#000;font-size:.65rem;font-weight:700;padding:.2rem .6rem;border-radius:3px;letter-spacing:.05em;white-space:nowrap">Only ${p.stock} left!</span>`
+              : '';
             return `
               <div class="product-card reveal" data-product-id="${p.id}" data-category="${(p.category||'').toLowerCase()}">
-                <div class="product-image">
-                  <img src="${p.image || 'images/product-tee.png'}" alt="${p.name}" loading="lazy">
+                <div class="product-image" style="position:relative">
+                  <img src="${p.image || 'images/product-tee.png'}" alt="${p.name}" loading="lazy" style="${isOutOfStock ? 'opacity:.5;filter:grayscale(.4)' : ''}">
                   ${tagText ? `<span class="product-tag">${tagText}</span>` : ''}
+                  ${stockBadge}
                   <div class="product-card-actions">
                     <button class="quick-view-btn" onclick="openQuickView('${p.id}')">Quick View</button>
                     <a href="product.html?id=${p.id}" class="view-detail-btn">View Details</a>
@@ -610,7 +618,7 @@
                     ${sizes.map((s, i) => `<span class="size-btn ${i === 0 ? 'selected' : ''}" data-size="${s}" onclick="selectSizeBtn(this)">${s}</span>`).join('')}
                   </div>
                 </div>
-                <button class="product-btn" onclick="addToCartFromCard('${p.id}',this)">Add to Cart</button>
+                <button class="product-btn" onclick="addToCartFromCard('${p.id}',this)" ${isOutOfStock ? 'disabled style="opacity:.45;cursor:not-allowed;background:#555"' : ''}>${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</button>
               </div>
             `;
           }).join('');

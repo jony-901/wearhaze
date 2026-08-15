@@ -284,13 +284,103 @@ async function showOrderDetail(orderId) {
     h += '<button class="btn btn-sm ' + (order.status===s?'btn-primary':'btn-secondary') + '" onclick="updateStatus(\'' + order.orderId + '\',\'' + s + '\');this.closest(\'.admin-modal-overlay\').remove();renderOrders()">' + s.charAt(0).toUpperCase()+s.slice(1) + '</button>';
   });
   h += '</div></div></div>';
-  h += '<div class="admin-modal-footer"><button class="btn btn-danger btn-sm" onclick="deleteOrder(\'' + order.orderId + '\');this.closest(\'.admin-modal-overlay\').remove()">Delete Order</button><button class="btn btn-secondary" onclick="this.closest(\'.admin-modal-overlay\').remove()">Close</button></div></div>';
+  h += '<div class="admin-modal-footer"><button class="btn btn-danger btn-sm" onclick="deleteOrder(\'' + order.orderId + '\');this.closest(\'.admin-modal-overlay\').remove()">Delete Order</button><button class="btn btn-secondary" style="background:rgba(255,184,0,.15);color:#FFB800;border:1px solid rgba(255,184,0,.3)" onclick="printInvoice(\'' + order.orderId + '\')">🧾 Print Invoice</button><button class="btn btn-secondary" onclick="this.closest(\'.admin-modal-overlay\').remove()">Close</button></div></div>';
 
   var overlay = document.createElement('div');
   overlay.className = 'admin-modal-overlay';
   overlay.innerHTML = h;
   document.body.appendChild(overlay);
   overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.remove(); });
+}
+
+async function printInvoice(orderId) {
+  var order = await HazeDB.getOrder(orderId);
+  if (!order) { toast('Order not found', 'error'); return; }
+  var cust  = order.customer || {};
+  var s     = (await HazeDB.getSettings()) || {};
+  var logoSrc = 'images/logo.png';
+  var storeName = s.storeName || 'WEAR HAZE';
+  var storeEmail = s.email || 'wearhaze.com@gmail.com';
+  var storePhone = s.phone || '';
+  var bkash = s.bkash || '';
+  var nagad = s.nagad || '';
+
+  var itemRows = (order.items || []).map(function(item) {
+    return '<tr><td style="padding:.6rem .5rem;border-bottom:1px solid #e5e7eb">' + item.name + '<br><span style="color:#6b7280;font-size:.78rem">Size: ' + item.size + '</span></td>'
+      + '<td style="padding:.6rem .5rem;border-bottom:1px solid #e5e7eb;text-align:center">' + item.qty + '</td>'
+      + '<td style="padding:.6rem .5rem;border-bottom:1px solid #e5e7eb;text-align:right">৳ ' + item.price.toLocaleString() + '</td>'
+      + '<td style="padding:.6rem .5rem;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700">৳ ' + (item.price * item.qty).toLocaleString() + '</td></tr>';
+  }).join('');
+
+  var payContact = order.paymentMethod === 'bkash' ? (bkash ? 'bKash: ' + bkash : '') : order.paymentMethod === 'nagad' ? (nagad ? 'Nagad: ' + nagad : '') : '';
+
+  var invoiceDate = new Date(order.createdAt).toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' });
+  var statusColor = order.status === 'delivered' ? '#16a34a' : order.status === 'cancelled' ? '#dc2626' : order.status === 'shipped' ? '#2563eb' : '#d97706';
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice ' + order.orderId + '</title>'
+    + '<style>'
+    + 'body{font-family:Arial,sans-serif;color:#111;margin:0;padding:0;background:#fff}'
+    + '.invoice{max-width:720px;margin:0 auto;padding:2.5rem}'
+    + '@media print{body{margin:0} .no-print{display:none} .invoice{padding:1.5rem}}'
+    + 'table{width:100%;border-collapse:collapse}'
+    + 'th{background:#111;color:#FFB800;padding:.6rem .5rem;text-align:left;font-size:.8rem;letter-spacing:.07em;text-transform:uppercase}'
+    + 'th:nth-child(2),th:nth-child(3),th:nth-child(4){text-align:center}'
+    + 'th:nth-child(3),th:nth-child(4){text-align:right}'
+    + '.total-row td{padding:.5rem;font-size:.9rem;border-bottom:1px solid #e5e7eb}'
+    + '</style></head><body>'
+    + '<div class="invoice">'
+    // HEADER
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:3px solid #FFB800">'
+    + '<div style="display:flex;align-items:center;gap:1rem">'
+    + '<img src="' + window.location.origin + '/' + logoSrc + '" style="height:56px;width:56px;object-fit:contain" onerror="this.style.display=\'none\'">'
+    + '<div><div style="font-size:1.6rem;font-weight:900;letter-spacing:.08em">' + storeName.toUpperCase() + '</div>'
+    + (storePhone ? '<div style="color:#6b7280;font-size:.82rem">' + storePhone + '</div>' : '')
+    + '<div style="color:#6b7280;font-size:.82rem">' + storeEmail + '</div></div></div>'
+    + '<div style="text-align:right">'
+    + '<div style="font-size:1.1rem;font-weight:800;color:#FFB800;letter-spacing:.05em">INVOICE</div>'
+    + '<div style="font-size:.9rem;font-weight:700;margin-top:.2rem">' + order.orderId + '</div>'
+    + '<div style="color:#6b7280;font-size:.8rem;margin-top:.2rem">' + invoiceDate + '</div>'
+    + '<div style="margin-top:.4rem;display:inline-block;background:' + statusColor + ';color:#fff;padding:.2rem .6rem;border-radius:3px;font-size:.72rem;font-weight:700;text-transform:uppercase">' + order.status + '</div>'
+    + '</div></div>'
+    // CUSTOMER & DELIVERY
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:1.5rem">'
+    + '<div><div style="font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:#9ca3af;margin-bottom:.4rem">Bill To</div>'
+    + '<div style="font-weight:700;font-size:1rem">' + cust.name + '</div>'
+    + '<div style="color:#6b7280;font-size:.85rem;margin-top:.2rem">' + cust.phone + '</div>'
+    + (cust.email ? '<div style="color:#6b7280;font-size:.85rem">' + cust.email + '</div>' : '')
+    + '</div>'
+    + '<div><div style="font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:#9ca3af;margin-bottom:.4rem">Ship To</div>'
+    + '<div style="color:#374151;font-size:.88rem;line-height:1.7">' + (cust.address || '') + '<br>' + (cust.city || '') + (cust.district ? ', ' + cust.district : '') + (cust.zip ? ' - ' + cust.zip : '') + '</div>'
+    + '</div></div>'
+    // PAYMENT INFO
+    + '<div style="margin-bottom:1.5rem;padding:.8rem;background:#f9fafb;border-radius:6px;font-size:.84rem">'
+    + '<span style="font-weight:600">Payment:</span> ' + order.paymentMethod.toUpperCase()
+    + (cust.trxid ? ' &nbsp;|&nbsp; <span style="font-weight:600">TrxID:</span> ' + cust.trxid : '')
+    + (payContact ? ' &nbsp;|&nbsp; ' + payContact : '')
+    + (cust.couponCode ? ' &nbsp;|&nbsp; <span style="font-weight:600">Coupon:</span> ' + cust.couponCode : '')
+    + '</div>'
+    // ITEMS TABLE
+    + '<table style="margin-bottom:1.2rem"><thead><tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Total</th></tr></thead><tbody>'
+    + itemRows + '</tbody></table>'
+    // TOTALS
+    + '<div style="display:flex;justify-content:flex-end"><table style="width:280px">'
+    + '<tr class="total-row"><td style="color:#6b7280">Subtotal</td><td style="text-align:right">৳ ' + (order.subtotal||0).toLocaleString() + '</td></tr>'
+    + (order.discount > 0 ? '<tr class="total-row"><td style="color:#16a34a">Discount</td><td style="text-align:right;color:#16a34a">- ৳ ' + order.discount.toLocaleString() + '</td></tr>' : '')
+    + '<tr class="total-row"><td style="color:#6b7280">Shipping</td><td style="text-align:right">৳ ' + (order.shipping||0) + '</td></tr>'
+    + '<tr><td style="padding:.7rem .5rem;font-weight:800;font-size:1.05rem">Grand Total</td><td style="padding:.7rem .5rem;text-align:right;font-weight:800;font-size:1.05rem;color:#111">৳ ' + (order.total||0).toLocaleString() + '</td></tr>'
+    + '</table></div>'
+    + (cust.notes ? '<div style="margin-top:1rem;padding:.8rem;background:#fffbeb;border:1px solid #fde68a;border-radius:4px;font-size:.84rem;color:#92400e">📝 Note: ' + cust.notes + '</div>' : '')
+    // FOOTER
+    + '<div style="margin-top:2.5rem;padding-top:1rem;border-top:1px solid #e5e7eb;text-align:center;color:#9ca3af;font-size:.78rem">'
+    + 'Thank you for shopping with ' + storeName + ' · wearhaze.com</div>'
+    + '<div class="no-print" style="text-align:center;margin-top:1.5rem">'
+    + '<button onclick="window.print()" style="background:#FFB800;color:#111;border:none;padding:.7rem 2rem;font-weight:800;font-size:.95rem;border-radius:6px;cursor:pointer;margin-right:.5rem">🖨️ Print</button>'
+    + '<button onclick="window.close()" style="background:#f3f4f6;color:#374151;border:none;padding:.7rem 1.5rem;font-weight:600;font-size:.9rem;border-radius:6px;cursor:pointer">Close</button>'
+    + '</div></div></body></html>';
+
+  var win = window.open('', '_blank', 'width=780,height=900,scrollbars=yes');
+  win.document.write(html);
+  win.document.close();
 }
 
 /* ══════════════════════════════════════════════════
