@@ -430,9 +430,9 @@
         <div class="footer-col">
           <h4>Connect</h4>
           <ul>
-            <li><a href="https://instagram.com/wearhaze" target="_blank">@wearhaze</a></li>
-            <li><a href="https://facebook.com/wearhaze" target="_blank">fb/wearhaze</a></li>
-            <li><a href="https://tiktok.com/@wearhaze" target="_blank">TikTok</a></li>
+            <li><a href="https://instagram.com/wearhaze" target="_blank" id="footer-ig">@wearhaze</a></li>
+            <li><a href="https://facebook.com/wearhaze" target="_blank" id="footer-fb">fb/wearhaze</a></li>
+            <li><a href="https://tiktok.com/@wearhaze" target="_blank" id="footer-tt">TikTok</a></li>
             <li><a href="mailto:hello@wearhaze.com">hello@wearhaze.com</a></li>
           </ul>
         </div>
@@ -500,9 +500,20 @@
         const settings = await HazeDB.getSettings();
         if (settings) {
           // Social links
-          if (settings.instagram) document.getElementById('social-ig').href = settings.instagram;
-          if (settings.facebook)  document.getElementById('social-fb').href = settings.facebook;
-          if (settings.tiktok)    document.getElementById('social-tt').href = settings.tiktok;
+          if (settings.instagram) {
+            document.getElementById('social-ig').href = settings.instagram;
+            document.getElementById('footer-ig').href = settings.instagram;
+            document.getElementById('footer-ig').textContent = '@' + settings.instagram.split('/').pop().replace(/[@]/g, '');
+          }
+          if (settings.facebook) {
+            document.getElementById('social-fb').href = settings.facebook;
+            document.getElementById('footer-fb').href = settings.facebook;
+            document.getElementById('footer-fb').textContent = 'fb/' + settings.facebook.split('/').pop();
+          }
+          if (settings.tiktok) {
+            document.getElementById('social-tt').href = settings.tiktok;
+            document.getElementById('footer-tt').href = settings.tiktok;
+          }
 
           // ── NAVBAR LOGO ───────────────────────
           updateNavLogo(settings);
