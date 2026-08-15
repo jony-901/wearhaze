@@ -4,6 +4,7 @@ define('DB_HOST', 'localhost');
 define('DB_NAME', 'u304991648_wearhaze_db');
 define('DB_USER', 'u304991648_wearhaze_user');
 define('DB_PASS', 'WearHazeDetaBasePass1');
+define('SESSION_NAME', 'wearhaze_panel_session');
 
 function getDB() {
     static $pdo = null;
